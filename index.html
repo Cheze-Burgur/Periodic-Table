@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Periodic Table</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+
+    <main id="table-wrap">
+        <header class="page-header">
+            <h1>Periodic Table</h1>
+            <p>Explore the elements of the periodic table.</p>
+        </header>
+
+        <section class="legend-section">
+            <h2 class="section-heading">Element Categories</h2>
+            <div class="legend">
+                <button class="legend-item" type="button" data-category="hydrogen"
+                    title="Highlight Hydrogen; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Hydrogen</span></button>
+                <button class="legend-item" type="button" data-category="alkali-metal"
+                    title="Highlight alkali metals; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Alkali
+                        Metal</span></button>
+                <button class="legend-item" type="button" data-category="alkaline-earth-metal"
+                    title="Highlight alkaline earth metals; click again to clear the highlight."
+                    aria-pressed="false"><span class="legend-color"></span><span>Alkaline Earth
+                        Metal</span></button>
+                <button class="legend-item" type="button" data-category="transition-metal"
+                    title="Highlight transition metals; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Transition
+                        Metal</span></button>
+                <button class="legend-item" type="button" data-category="post-transition-metal"
+                    title="Highlight post-transition metals; click again to clear the highlight."
+                    aria-pressed="false"><span class="legend-color"></span><span>Post-Transition
+                        Metal</span></button>
+                <button class="legend-item" type="button" data-category="metalloid"
+                    title="Highlight metalloids; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Metalloid</span></button>
+                <button class="legend-item" type="button" data-category="reactive-nonmetal"
+                    title="Highlight reactive nonmetals; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Reactive
+                        Nonmetal</span></button>
+                <button class="legend-item" type="button" data-category="halogen"
+                    title="Highlight halogens; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Halogen</span></button>
+                <button class="legend-item" type="button" data-category="noble-gas"
+                    title="Highlight noble gases; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Noble
+                        Gas</span></button>
+                <button class="legend-item" type="button" data-category="lanthanide"
+                    title="Highlight lanthanides; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Lanthanide</span></button>
+                <button class="legend-item" type="button" data-category="actinide"
+                    title="Highlight actinides; click again to clear the highlight." aria-pressed="false"><span
+                        class="legend-color"></span><span>Actinide</span></button>
+                <button class="legend-item" type="button" data-category="unknown"
+                    title="Highlight elements whose properties are unknown; click again to clear the highlight."
+                    aria-pressed="false"><span class="legend-color"></span><span>Unknown</span></button>
+            </div>
+        </section>
+
+        <section class="table-container">
+            <div class="table-scroll">
+                <div class="periodic-layout">
+                    <div class="period-labels" aria-label="Periods">
+                        <div class="period-label">1</div>
+                        <div class="period-label">2</div>
+                        <div class="period-label">3</div>
+                        <div class="period-label">4</div>
+                        <div class="period-label">5</div>
+                        <div class="period-label">6</div>
+                        <div class="period-label">7</div>
+                    </div>
+                    <div class="main-grid">
+                        <div class="series-placeholder lanthanide-placeholder" data-category="lanthanide">
+                            <strong>57–71</strong><span>Lanthanides</span>
+                        </div>
+                        <div class="series-placeholder actinide-placeholder" data-category="actinide">
+                            <strong>89–103</strong><span>Actinides</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="series-section">
+                    <div class="series-row">
+                        <div class="series-label">Lanthanides</div>
+                        <div class="series-elements" data-series="lanthanide"></div>
+                    </div>
+                    <div class="series-row">
+                        <div class="series-label">Actinides</div>
+                        <div class="series-elements" data-series="actinide"></div>
+                    </div>
+                </div>
+            </div>
+            <footer class="table-footer">
+                <section>Data sourced from Browserinator's <a href="https://github.com/Bowserinator/Periodic-Table-JSON"
+                        target="_blank" rel="noopener noreferrer">Periodic Table JSON</a> project</section>
+                <section>Table designed by <a href="https://github.com/Cheze-Burgur" target="_blank"
+                        rel="noopener noreferrer">Cheze</a></section>
+            </footer>
+        </section>
+
+        <section class="details-section">
+            <h2>Element Details</h2>
+
+            <p class="details-empty">
+                Select an element to view its information.
+            </p>
+
+            <div class="details-content" hidden>
+
+                <!-- Element header -->
+                <div class="details-header">
+
+                    <div class="details-symbol">
+                        <span class="details-symbol-number"></span>
+                        <strong class="details-symbol-text"></strong>
+                        <span class="element-radioactive-icon"></span>
+                    </div>
+
+                    <div class="details-heading">
+                        <h3 class="details-name"></h3>
+                        <span class="details-category"></span>
+                    </div>
+
+                    <div class="electron-diagram">
+                        <svg class="electron-diagram-svg" viewBox="0 0 200 200" role="img"
+                            aria-label="Electron shell diagram">
+                        </svg>
+                    </div>
+
+                </div>
+
+                <div class="details-properties">
+
+                    <div class="property-card">
+                        <span class="details-period-label">Period</span>
+                        <strong class="details-period"></strong>
+                    </div>
+
+                    <div class="property-card">
+                        <span class="details-group-label">Group</span>
+                        <strong class="details-group"></strong>
+                    </div>
+
+                    <div class="property-card">
+                        <span>Atomic Mass</span>
+                        <strong class="details-mass"></strong>
+                        <span class="radioactive-note" hidden></span>
+                    </div>
+
+                    <div class="property-card">
+                        <span>Density</span>
+                        <strong class="details-density"></strong>
+                    </div>
+
+                    <div class="property-card">
+                        <span>Electron Configuration</span>
+                        <p class="details-configuration"></p>
+                    </div>
+
+                    <div class="property-card">
+                        <span>Phase (at standard temperature/pressure)</span>
+                        <strong class="details-phase"></strong>
+                    </div>
+
+                    <div class="property-card sublimation-card" hidden>
+                        <span>Sublimation Point</span>
+                        <strong class="details-sublimation"></strong>
+                    </div>
+
+                    <div class="property-card boiling-card">
+                        <span>Boiling Point</span>
+                        <strong class="details-boiling"></strong>
+                    </div>
+
+                    <div class="property-card freezing-card">
+                        <span>Freezing Point</span>
+                        <strong class="details-freezing"></strong>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script src="./main.js"></script>
+
+</body>
+
+</html>
