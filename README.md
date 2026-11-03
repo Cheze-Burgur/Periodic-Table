@@ -1,2 +1,3 @@
-# Periodic-Table
-Custom Periodic Table that I have made.
+# Cheze's Periodic Table
+
+note to self: fill this in later
