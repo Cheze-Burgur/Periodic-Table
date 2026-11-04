@@ -1,5 +1,11 @@
 const RADIOACTIVE_MESSAGE = "This element has no stable isotopes; the mass of the isotope with the longest half-life is used";
 
+// Sublimation points for elements that sublime instead of melting or boiling
+const SUBLIMATION_POINTS_K = {
+    6: 3915,
+    33: 887
+};
+
 const RADIOACTIVE_ICON = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
   <g fill="currentColor">
@@ -45,7 +51,26 @@ function normalizeElement(element) {
         "actinide": "actinide"
     };
 
-    const category = categoryMap[element.category] ?? "unknown";
+    const halogens = [9, 17, 35, 53, 85]
+    let category;
+
+    switch (true) {
+        case element.number === 1:
+            category = "hydrogen";
+            break;
+
+        case halogens.includes(element.number):
+            category = "halogen";
+            break;
+
+        case element.number >= 109:
+            category = "unknown";
+            break;
+
+        default:
+            category = categoryMap[element.category] ?? "unknown";
+    }
+
 
     // f block
     let series = null;
@@ -68,8 +93,12 @@ function normalizeElement(element) {
         number: element.number,
         symbol: element.symbol,
         name: element.name,
+        summary: element.summary ?? "",
+        source: element.source ?? "",
 
         mass: element.atomic_mass,
+        electronegativity: element.electronegativity_pauling ?? null,
+        ionizationEnergies: element.ionization_energies ?? [],
 
         period: element.period,
         group: element.group ?? null,
@@ -91,6 +120,9 @@ function normalizeElement(element) {
 
         boiling: kelvinToCelsius(element.boil),
         melting: kelvinToCelsius(element.melt),
+        sublimation: kelvinToCelsius(
+            element.sublimation ?? SUBLIMATION_POINTS_K[element.number]
+        ),
 
         // Electron information
         shells: element.shells ?? [],
@@ -110,7 +142,6 @@ async function loadElements() {
 
         const data = await response.json();
 
-        console.log("Loaded element data:", data.elements.filter(element => element.number >= 1 && element.number <= 118).map(normalizeElement));
         return data.elements
             .filter(element => element.number >= 1 && element.number <= 118)
             .map(normalizeElement);
@@ -208,9 +239,14 @@ class PeriodicTable {
         this.detailsSymbolText = this.tableElement.querySelector(".details-symbol-text");
         this.detailsRadioactiveIcon = this.tableElement.querySelector(".details-symbol .element-radioactive-icon");
         this.detailsName = this.tableElement.querySelector(".details-name");
+        this.detailsSummary = this.tableElement.querySelector(".details-summary");
+        this.detailsSummarySource = this.tableElement.querySelector(".details-summary-source");
+        this.detailsSummarySourceLabel = this.tableElement.querySelector(".details-summary-source-label");
         this.detailsMass = this.tableElement.querySelector(".details-mass");
         this.radioactiveNote = this.tableElement.querySelector(".radioactive-note");
         this.detailsDensity = this.tableElement.querySelector(".details-density");
+        this.detailsElectronegativity = this.tableElement.querySelector(".details-electronegativity");
+        this.detailsIonization = this.tableElement.querySelector(".details-ionization");
         this.detailsCategory = this.tableElement.querySelector(".details-category");
         this.detailsPeriodLabel = this.tableElement.querySelector(".details-period-label");
         this.detailsPeriod = this.tableElement.querySelector(".details-period");
@@ -640,6 +676,18 @@ class PeriodicTable {
         }
 
         this.detailsName.textContent = element.name;
+        this.detailsSummary.textContent = element.summary || "Not provided";
+
+        const summarySource = element.source;
+        const hasValidSummarySource =
+            typeof summarySource === "string" &&
+            /^https?:\/\/\S+$/i.test(summarySource);
+        this.detailsSummarySourceLabel.hidden = !hasValidSummarySource;
+        if (hasValidSummarySource) {
+            this.detailsSummarySource.href = summarySource;
+        } else {
+            this.detailsSummarySource.removeAttribute("href");
+        }
 
         this.updateElectronDiagram(element);
 
@@ -667,10 +715,49 @@ class PeriodicTable {
         } else if (this.isUnknown(element.density) || !Number.isFinite(density)) {
             this.detailsDensity.textContent = "Unknown";
         } else {
-            const densityText = String(element.density);
-            const [integerPart, decimalPart = ""] = densityText.split(".");
-            this.detailsDensity.textContent =
-                `${integerPart}.${decimalPart.padEnd(3, "0")} g/cm³`;
+            const densityText = density.toLocaleString(undefined, {
+                useGrouping: false,
+                maximumSignificantDigits: 6
+            });
+            this.detailsDensity.textContent = `${densityText} g/cm³`;
+        }
+
+        const electronegativity = Number(element.electronegativity);
+        if (
+            element.electronegativity === null ||
+            element.electronegativity === undefined ||
+            element.electronegativity === ""
+        ) {
+            this.detailsElectronegativity.textContent = "Not provided";
+        } else if (this.isUnknown(element.electronegativity) || !Number.isFinite(electronegativity)) {
+            this.detailsElectronegativity.textContent = "Unknown";
+        } else {
+            this.detailsElectronegativity.textContent = String(electronegativity);
+        }
+
+        const ionizationEnergies = Array.isArray(element.ionizationEnergies)
+            ? element.ionizationEnergies
+                .filter(energy => energy !== null && energy !== "")
+                .map(Number)
+                .filter(Number.isFinite)
+            : [];
+        this.detailsIonization.replaceChildren();
+
+        if (ionizationEnergies.length === 0) {
+            const row = this.createElement("tr");
+            const cell = this.createElement("td", "ionization-empty", "Not provided");
+            cell.colSpan = 2;
+            row.append(cell);
+            this.detailsIonization.append(row);
+        } else {
+            ionizationEnergies.forEach((energy, index) => {
+                const row = this.createElement("tr");
+                const stage = this.createElement("th", "", `#${index + 1}`);
+                stage.scope = "row";
+                const value = this.createElement("td", "", energy.toLocaleString());
+                row.append(stage, value);
+                this.detailsIonization.append(row);
+            });
         }
 
         // Category
@@ -711,8 +798,10 @@ class PeriodicTable {
         const freezingPoint = element.freezing ?? element.melting;
         const hasSublimationPoint = element.sublimation !== null &&
             element.sublimation !== undefined && element.sublimation !== "";
-        const useSublimationCard = element.boiling == null &&
-            freezingPoint == null && hasSublimationPoint;
+        const hasStandardPressureSublimationPoint =
+            SUBLIMATION_POINTS_K[element.number] !== undefined;
+        const useSublimationCard = hasSublimationPoint &&
+            (freezingPoint == null || hasStandardPressureSublimationPoint);
 
         this.sublimationCard.hidden = !useSublimationCard;
         this.boilingCard.hidden = useSublimationCard;
@@ -727,23 +816,6 @@ class PeriodicTable {
 
         this.detailsBoiling.textContent = this.formatTemperature(element.boiling);
         this.detailsFreezing.textContent = this.formatTemperature(freezingPoint);
-    }
-
-    createLabel(label, value) {
-        const fragment = document.createDocumentFragment();
-
-        const strong = this.createElement(
-            "strong",
-            "",
-            `${label}: `
-        );
-
-        fragment.append(
-            strong,
-            document.createTextNode(String(value))
-        );
-
-        return fragment;
     }
 
     getCategoryPrefix(category) {
@@ -797,13 +869,15 @@ class PeriodicTable {
 
         fragment.append(label, document.createTextNode(": "));
 
-        // Get the element's configuration.
-        const fullConfiguration = element.configuration ||
+        // Prefer the complete configurations supplied by the dataset.
+        const fullConfiguration = element.electronConfiguration ||
             generateElectronConfiguration(element.number);
+        const shorthandConfiguration = element.electronConfigurationSemantic ||
+            generateShorthandConfiguration(element.number, fullConfiguration);
 
         const configuration = this.configurationFormat === "full"
             ? fullConfiguration
-            : generateShorthandConfiguration(element.number, fullConfiguration);
+            : shorthandConfiguration;
 
         // Format the orbital exponents.
         const orbitals = configuration.match(/\d+[spdf]\d+|\s+|\S+/g) || [];
@@ -825,14 +899,6 @@ class PeriodicTable {
         return fragment;
     }
 
-    getElectronConfiguration(element) {
-        if (element.configuration) {
-            return element.configuration;
-        }
-
-        return generateElectronConfiguration(element.number);
-    }
-
     updateElectronConfiguration() {
         if (!this.selectedElement) return;
 
@@ -841,9 +907,16 @@ class PeriodicTable {
         );
     }
 
-    getShellDistribution(atomicNumber) {
-        const configuration = generateElectronConfiguration(atomicNumber);
+    getShellDistribution(atomicNumber, elementShells = []) {
+        if (Array.isArray(elementShells) && elementShells.length > 0) {
+            return Object.fromEntries(
+                elementShells
+                    .map((electrons, index) => [index + 1, Number(electrons)])
+                    .filter(([, electrons]) => Number.isFinite(electrons) && electrons > 0)
+            );
+        }
 
+        const configuration = generateElectronConfiguration(atomicNumber);
         const shells = {};
 
         // Convert superscript digits to ordinary digits,
@@ -883,7 +956,7 @@ class PeriodicTable {
             return node;
         };
 
-        const shells = this.getShellDistribution(element.number);
+        const shells = this.getShellDistribution(element.number, element.shells);
 
         const shellNumbers = Object.keys(shells)
             .map(Number)
@@ -1102,18 +1175,22 @@ function generateShorthandConfiguration(atomicNumber, fullConfiguration) {
     return `[${core.symbol}] ${remainingOrbitals.join(" ")}`;
 }
 
-// Initialize the table
-let elements = [];
+// Ctrl+H toggles the table footer.
+document.addEventListener("keydown", event => {
+    if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        document.querySelector(".table-footer")?.classList.toggle("footer-hidden");
+    }
+});
 
 async function initialize() {
-    elements = await loadElements();
+    const elements = await loadElements();
 
     if (elements.length !== 118) {
-        console.error("Expected 118 elements, got", elements.length);
-        return;
+        console.warn("Expected 118 elements, got", elements.length);
     }
 
-    const periodicTable = new PeriodicTable(
+    new PeriodicTable(
         document.getElementById("table-wrap"),
         elements
     );

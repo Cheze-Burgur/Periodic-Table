@@ -84,6 +84,35 @@
 }
 
 * {
+    scrollbar-color: var(--text-3) var(--bg-2);
+    scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--bg-2);
+    border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--text-3);
+    border: 2px solid var(--bg-2);
+    border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+}
+
+*::-webkit-scrollbar-corner {
+    background: var(--bg-2);
+}
+
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -761,6 +790,84 @@ button {
     grid-column: span 2;
 }
 
+.summary-card {
+    grid-column: 1 / -1;
+}
+
+.summary-card .details-summary-source-label {
+    margin-left: 4px;
+    color: var(--text-3);
+    font-size: 0.65rem;
+    font-style: italic;
+}
+
+.details-summary-source {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 2px;
+    transition: text-decoration-color 0.2s ease;
+}
+
+.details-summary-source:hover,
+.details-summary-source:focus-visible {
+    text-decoration-color: currentColor;
+}
+
+.details-summary-source:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.summary-card p {
+    margin: 0;
+    color: var(--text-1);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.ionization-table-container {
+    max-height: 130px;
+    overflow: auto;
+}
+
+.ionization-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+}
+
+.ionization-table th,
+.ionization-table td {
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ionization-table thead {
+    position: sticky;
+    top: 0;
+    background: var(--bg-3);
+    color: var(--text-2);
+}
+
+.ionization-table tbody th {
+    color: var(--text-2);
+    font-weight: 500;
+}
+
+.ionization-table td {
+    color: var(--text-1);
+}
+
+.ionization-table .ionization-empty {
+    color: var(--text-3);
+}
+
 .property-card span {
     color: var(--text-2);
     font-size: 0.7rem;
@@ -842,6 +949,10 @@ button {
 
     color: var(--text-3);
     font-size: 0.8rem;
+}
+
+.table-footer.footer-hidden {
+    display: none;
 }
 
 .table-footer {
