@@ -802,12 +802,9 @@ button {
 
 .summary-card .details-summary-source-label {
     margin-left: 4px;
-    color: var(--text-3);
-    font-size: 0.65rem;
-    font-style: italic;
 }
 
-.details-summary-source {
+.source-link {
     color: var(--accent);
     font-style: normal;
     font-weight: 600;
@@ -817,12 +814,12 @@ button {
     transition: text-decoration-color 0.2s ease;
 }
 
-.details-summary-source:hover,
-.details-summary-source:focus-visible {
+.source-link:hover,
+.source-link:focus-visible {
     text-decoration-color: currentColor;
 }
 
-.details-summary-source:focus-visible {
+.source-link:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
@@ -896,6 +893,12 @@ button {
 .property-card span {
     color: var(--text-2);
     font-size: 0.7rem;
+}
+
+.property-card .source-label {
+    color: var(--text-3);
+    font-size: 0.65rem;
+    font-style: italic;
 }
 
 .property-card strong {
