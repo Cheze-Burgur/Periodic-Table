@@ -310,7 +310,9 @@ function generateSpectrumImage(canvas, spectrum) {
     const minWavelength = 380;
     const maxWavelength = 780;
     const visibleLines = spectrum.filter(line =>
-        Number.isFinite(line.intensity) && line.intensity > 0
+        Number.isFinite(line.wavelength) &&
+        Number.isFinite(line.intensity) &&
+        line.intensity > 0
     );
 
     if (visibleLines.length === 0) {

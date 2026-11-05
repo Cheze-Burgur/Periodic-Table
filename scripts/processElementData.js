@@ -69,6 +69,7 @@ function normalizeElement(element) {
 
         mass: element.atomic_mass,
         electronegativity: element.electronegativity_pauling ?? null,
+        electronAffinity: element.electron_affinity ?? null,
         ionizationEnergies: element.ionization_energies ?? [],
 
         period: element.period,

@@ -131,6 +131,7 @@ class PeriodicTable {
         this.radioactiveNote = this.tableElement.querySelector(".radioactive-note");
         this.detailsDensity = this.tableElement.querySelector(".details-density");
         this.detailsElectronegativity = this.tableElement.querySelector(".details-electronegativity");
+        this.detailsAffinity = this.tableElement.querySelector(".details-affinity");
         this.detailsIonization = this.tableElement.querySelector(".details-ionization");
         this.detailsCategory = this.tableElement.querySelector(".details-category");
         this.detailsPeriodLabel = this.tableElement.querySelector(".details-period-label");
@@ -623,6 +624,21 @@ class PeriodicTable {
             this.detailsElectronegativity.textContent = "Unknown";
         } else {
             this.detailsElectronegativity.textContent = String(electronegativity);
+        }
+
+        const electronAffinity = Number(element.electronAffinity);
+        if (
+            element.electronAffinity === null ||
+            element.electronAffinity === undefined ||
+            element.electronAffinity === ""
+        ) {
+            this.detailsAffinity.textContent = "Not provided";
+        } else if (this.isUnknown(element.electronAffinity) || !Number.isFinite(electronAffinity)) {
+            this.detailsAffinity.textContent = "Unknown";
+        } else {
+            this.detailsAffinity.textContent = `${electronAffinity.toLocaleString(undefined, {
+                maximumSignificantDigits: 6
+            })} kJ/mol`;
         }
 
         const ionizationEnergies = Array.isArray(element.ionizationEnergies)

@@ -768,10 +768,19 @@ button {
 /* Property cards */
 .details-properties {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 10px;
 
     margin-bottom: 20px;
+}
+
+.period-card,
+.group-card {
+    grid-column: span 1;
+}
+
+.details-properties>.property-card:not(.period-card):not(.group-card):not(.summary-card):not(.sublimation-card):not(.spectra-card) {
+    grid-column: span 2;
 }
 
 .property-card {
@@ -793,7 +802,7 @@ button {
 
 .sublimation-card,
 .spectra-card {
-    grid-column: span 2;
+    grid-column: span 4;
 }
 
 .summary-card {
@@ -1024,7 +1033,13 @@ button {
 /* ===== Responsive ===== */
 @media (max-width: 900px) {
     .details-properties {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .summary-card,
+    .sublimation-card,
+    .spectra-card {
+        grid-column: span 4;
     }
 }
 
