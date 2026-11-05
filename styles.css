@@ -162,6 +162,11 @@ button {
     overflow: hidden;
 }
 
+.table-load-status {
+    color: #fca5a5;
+    margin-bottom: 12px;
+}
+
 .table-scroll {
     overflow-x: auto;
     padding-bottom: 12px;
@@ -786,7 +791,8 @@ button {
     display: none;
 }
 
-.sublimation-card {
+.sublimation-card,
+.spectra-card {
     grid-column: span 2;
 }
 
@@ -830,7 +836,8 @@ button {
 }
 
 .ionization-table-container {
-    max-height: 130px;
+    flex: 1 1 0;
+    min-height: 100px;
     overflow: auto;
 }
 
@@ -866,6 +873,24 @@ button {
 
 .ionization-table .ionization-empty {
     color: var(--text-3);
+}
+
+.spectrum-status {
+    color: var(--text-3);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.spectra-card canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    background: #080b12;
+}
+
+.spectra-card canvas[hidden] {
+    display: none;
 }
 
 .property-card span {

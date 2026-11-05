@@ -65,6 +65,7 @@
         </section>
 
         <section class="table-container">
+            <p class="table-load-status" role="alert" hidden></p>
             <div class="table-scroll">
                 <div class="periodic-layout">
                     <div class="period-labels" aria-label="Periods">
@@ -210,13 +211,20 @@
                         </div>
                     </div>
 
+                    <div class="property-card spectra-card">
+                        <span>Spectral Lines <span>(NIST ASD, neutral atom; 380–780 nm)</span></span>
+                        <p class="spectrum-status" role="status" aria-live="polite"></p>
+                        <canvas id="spectrum-canvas" width="800" height="260" role="img"
+                            aria-label="Observed visible emission spectrum" hidden></canvas>
+                    </div>
+
                 </div>
 
             </div>
         </section>
     </main>
 
-    <script src="./main.js"></script>
+    <script type="module" src="./scripts/main.js"></script>
 
 </body>
 

@@ -1,10 +1,15 @@
-const RADIOACTIVE_MESSAGE = "This element has no stable isotopes; the mass of the isotope with the longest half-life is used";
+import {
+    generateElectronConfiguration,
+    generateShorthandConfiguration,
+    loadElements,
+    SUBLIMATION_POINTS_K
+} from "./processElementData.js";
+import {
+    generateSpectrumImage,
+    loadSpectrumData
+} from "./processSpectra.js";
 
-// Sublimation points for elements that sublime instead of melting or boiling
-const SUBLIMATION_POINTS_K = {
-    6: 3915,
-    33: 887
-};
+const RADIOACTIVE_MESSAGE = "This element has no stable isotopes; the mass of the isotope with the longest half-life is used";
 
 const RADIOACTIVE_ICON = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
@@ -29,128 +34,6 @@ const RADIOACTIVE_ICON = `
 	  	c55.875,32.141,126.953,34.531,186.672,0.047l-68.406-118.531H280.859z"/>
   </g>
 </svg>`;
-
-function normalizeElement(element) {
-    function kelvinToCelsius(value) {
-        return value == null ? null : value - 273.15;
-    }
-
-    // Map the categories from the dataset to the category names used here
-    const categoryMap = {
-        "alkali metal": "alkali-metal",
-        "alkaline earth metal": "alkaline-earth-metal",
-        "transition metal": "transition-metal",
-        "post-transition metal": "post-transition-metal",
-        "metalloid": "metalloid",
-        "diatomic nonmetal": "reactive-nonmetal",
-        "polyatomic nonmetal": "reactive-nonmetal",
-        "reactive nonmetal": "reactive-nonmetal",
-        "halogen": "halogen",
-        "noble gas": "noble-gas",
-        "lanthanide": "lanthanide",
-        "actinide": "actinide"
-    };
-
-    const halogens = [9, 17, 35, 53, 85]
-    let category;
-
-    switch (true) {
-        case element.number === 1:
-            category = "hydrogen";
-            break;
-
-        case halogens.includes(element.number):
-            category = "halogen";
-            break;
-
-        case element.number >= 109:
-            category = "unknown";
-            break;
-
-        default:
-            category = categoryMap[element.category] ?? "unknown";
-    }
-
-
-    // f block
-    let series = null;
-    let seriesPosition = null;
-
-    if (element.number >= 57 && element.number <= 71) {
-        series = "lanthanide";
-        seriesPosition = element.number - 56;
-    } else if (element.number >= 89 && element.number <= 103) {
-        series = "actinide";
-        seriesPosition = element.number - 88;
-    }
-
-    const radioactive =
-        element.number === 43 ||
-        element.number === 61 ||
-        element.number >= 83;
-
-    return {
-        number: element.number,
-        symbol: element.symbol,
-        name: element.name,
-        summary: element.summary ?? "",
-        source: element.source ?? "",
-
-        mass: element.atomic_mass,
-        electronegativity: element.electronegativity_pauling ?? null,
-        ionizationEnergies: element.ionization_energies ?? [],
-
-        period: element.period,
-        group: element.group ?? null,
-
-        category,
-        series,
-        seriesPosition,
-        radioactive,
-
-        phase: element.phase ?? null,
-
-        // Use the g/cm^3 when possible
-        density: element.density_g_cm3 ??
-            (element.density == null
-                ? null
-                : element.density_unit === "g/L"
-                    ? element.density / 1000
-                    : element.density),
-
-        boiling: kelvinToCelsius(element.boil),
-        melting: kelvinToCelsius(element.melt),
-        sublimation: kelvinToCelsius(
-            element.sublimation ?? SUBLIMATION_POINTS_K[element.number]
-        ),
-
-        // Electron information
-        shells: element.shells ?? [],
-        electronConfiguration: element.electron_configuration ?? "",
-        electronConfigurationSemantic:
-            element.electron_configuration_semantic ?? ""
-    };
-}
-
-async function loadElements() {
-    try {
-        const response = await fetch("./data/elements.json");
-
-        if (!response.ok) {
-            throw new Error(`HTTP error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        return data.elements
-            .filter(element => element.number >= 1 && element.number <= 118)
-            .map(normalizeElement);
-
-    } catch (error) {
-        console.error("Failed to load element data:", error);
-        return [];
-    }
-}
 
 class PeriodicTable {
     constructor(tableElement, elements = []) {
@@ -214,6 +97,8 @@ class PeriodicTable {
 
         this.activeCategory = null;
         this.configurationFormat = "full";
+        this.spectrumRequestId = 0;
+        this.spectrumAbortController = null;
 
         this.tableElement.addEventListener("click", event => {
             const legendItem = event.target.closest(".legend-item");
@@ -260,6 +145,8 @@ class PeriodicTable {
         this.sublimationCard = this.tableElement.querySelector(".sublimation-card");
         this.boilingCard = this.tableElement.querySelector(".boiling-card");
         this.freezingCard = this.tableElement.querySelector(".freezing-card");
+        this.spectrumCanvas = this.tableElement.querySelector("#spectrum-canvas");
+        this.spectrumStatus = this.tableElement.querySelector(".spectrum-status");
     }
 
     refresh() {
@@ -543,7 +430,7 @@ class PeriodicTable {
             const empty = this.createElement(
                 "div",
                 "empty-state",
-                "No elements have been added yet."
+                "No elements are available."
             );
 
             this.mainGrid.append(empty);
@@ -601,6 +488,9 @@ class PeriodicTable {
             Number(this.selectedElement.number) === Number(element.number)
         ) {
             this.selectedElement = null;
+            this.spectrumRequestId++;
+            this.spectrumAbortController?.abort();
+            this.spectrumAbortController = null;
 
             this.mainGrid
                 .querySelectorAll(".element.selected")
@@ -816,6 +706,68 @@ class PeriodicTable {
 
         this.detailsBoiling.textContent = this.formatTemperature(element.boiling);
         this.detailsFreezing.textContent = this.formatTemperature(freezingPoint);
+        this.updateSpectrum(element);
+    }
+
+    async updateSpectrum(element) {
+        this.spectrumAbortController?.abort();
+        const abortController = new AbortController();
+        this.spectrumAbortController = abortController;
+        const requestId = ++this.spectrumRequestId;
+        this.spectrumCanvas.hidden = true;
+        this.spectrumCanvas.getContext("2d").clearRect(
+            0,
+            0,
+            this.spectrumCanvas.width,
+            this.spectrumCanvas.height
+        );
+        this.spectrumStatus.textContent = "Loading observed spectral lines from NIST...";
+
+        try {
+            const { spectrum } = await loadSpectrumData(element, abortController.signal);
+
+            if (
+                requestId !== this.spectrumRequestId ||
+                this.selectedElement?.number !== element.number
+            ) {
+                return;
+            }
+
+            if (spectrum.length === 0) {
+                this.spectrumStatus.textContent =
+                    "No observed spectral lines found";
+                return;
+            }
+
+            generateSpectrumImage(this.spectrumCanvas, spectrum);
+            this.spectrumCanvas.setAttribute(
+                "aria-label",
+                `Observed visible emission spectrum for ${element.name}`
+            );
+            this.spectrumCanvas.hidden = false;
+
+            const intensityCount = spectrum.filter(line =>
+                Number.isFinite(line.intensity) && line.intensity > 0
+            ).length;
+            this.spectrumStatus.textContent = intensityCount > 0
+                ? `${spectrum.length} observed lines from NIST ASD. Log relative intensity shown.`
+                : `${spectrum.length} observed lines found, but no relative intensities were reported.`;
+        } catch (error) {
+            if (
+                requestId !== this.spectrumRequestId ||
+                this.selectedElement?.number !== element.number
+            ) {
+                return;
+            }
+
+            console.error(`Failed to load spectrum for ${element.symbol}:`, error);
+            this.spectrumStatus.textContent =
+                "Unable to load spectral data from NIST. Please try selecting the element again.";
+        } finally {
+            if (this.spectrumAbortController === abortController) {
+                this.spectrumAbortController = null;
+            }
+        }
     }
 
     getCategoryPrefix(category) {
@@ -1058,123 +1010,6 @@ class PeriodicTable {
 
 }
 
-const orbitalOrder = [
-    { name: "1s", capacity: 2 },
-    { name: "2s", capacity: 2 },
-    { name: "2p", capacity: 6 },
-    { name: "3s", capacity: 2 },
-    { name: "3p", capacity: 6 },
-    { name: "4s", capacity: 2 },
-    { name: "3d", capacity: 10 },
-    { name: "4p", capacity: 6 },
-    { name: "5s", capacity: 2 },
-    { name: "4d", capacity: 10 },
-    { name: "5p", capacity: 6 },
-    { name: "6s", capacity: 2 },
-    { name: "4f", capacity: 14 },
-    { name: "5d", capacity: 10 },
-    { name: "6p", capacity: 6 },
-    { name: "7s", capacity: 2 },
-    { name: "5f", capacity: 14 },
-    { name: "6d", capacity: 10 },
-    { name: "7p", capacity: 6 }
-];
-
-function generateElectronConfiguration(atomicNumber) {
-    atomicNumber = Number(atomicNumber);
-    if (!Number.isInteger(atomicNumber) || atomicNumber < 1 || atomicNumber > 118) {
-        throw new Error(`Invalid atomic number: ${atomicNumber}`);
-    }
-
-    // Fill orbitals using the Aufbau principle
-    let remainingElectrons = atomicNumber;
-    const configuration = {};
-
-    for (const orbital of orbitalOrder) {
-        const electrons = Math.min(remainingElectrons, orbital.capacity);
-
-        configuration[orbital.name] = electrons;
-        remainingElectrons -= electrons;
-
-        if (remainingElectrons === 0) break;
-    }
-
-    // Correct exceptions to the normal filling order
-    const exceptions = {
-        24: { "4s": 1, "3d": 5 },  // Chromium
-        29: { "4s": 1, "3d": 10 }, // Copper
-
-        41: { "5s": 1, "4d": 4 },  // Niobium
-        42: { "5s": 1, "4d": 5 },  // Molybdenum
-        44: { "5s": 1, "4d": 7 },  // Ruthenium
-        45: { "5s": 1, "4d": 8 },  // Rhodium
-        46: { "5s": 0, "4d": 10 }, // Palladium
-        47: { "5s": 1, "4d": 10 }, // Silver
-
-        57: { "4f": 0, "5d": 1 },  // Lanthanum
-        58: { "4f": 1, "5d": 1 },  // Cerium
-        64: { "4f": 7, "5d": 1 },  // Gadolinium
-
-        78: { "6s": 1, "5d": 9 },  // Platinum
-        79: { "6s": 1, "5d": 10 }, // Gold
-
-        89: { "5f": 0, "6d": 1 },  // Actinium
-        90: { "5f": 0, "6d": 2 },  // Thorium
-        91: { "5f": 2, "6d": 1 },  // Protactinium
-        92: { "5f": 3, "6d": 1 },  // Uranium
-        93: { "5f": 4, "6d": 1 },  // Neptunium
-        96: { "5f": 7, "6d": 1 }   // Curium
-    };
-
-    const correction = exceptions[atomicNumber];
-
-    if (correction) {
-        Object.assign(configuration, correction);
-    }
-
-    // Convert the orbital data into a string.
-    return orbitalOrder
-        .filter(orbital => configuration[orbital.name] > 0)
-        .map(orbital => `${orbital.name}${configuration[orbital.name]}`)
-        .join(" ");
-}
-
-const nobleGases = [
-    { number: 2, symbol: "He" },
-    { number: 10, symbol: "Ne" },
-    { number: 18, symbol: "Ar" },
-    { number: 36, symbol: "Kr" },
-    { number: 54, symbol: "Xe" },
-    { number: 86, symbol: "Rn" }
-];
-
-function generateShorthandConfiguration(atomicNumber, fullConfiguration) {
-    // Find the nearest preceding noble gas.
-    const core = [...nobleGases]
-        .reverse()
-        .find(element => element.number < atomicNumber);
-
-    if (!core) return fullConfiguration;
-
-    // Generate the noble gas's full configuration.
-    const coreConfiguration = generateElectronConfiguration(core.number);
-
-    const fullOrbitals = fullConfiguration.match(/\d+[spdf]\d+/g) || [];
-    const coreOrbitals = coreConfiguration.match(/\d+[spdf]\d+/g) || [];
-
-    // Make sure the core configuration matches the beginning.
-    const matchesCore = coreOrbitals.every(
-        (orbital, index) => fullOrbitals[index] === orbital
-    );
-
-    if (!matchesCore) return fullConfiguration;
-
-    // Remove the core orbitals and replace them with the noble gas symbol.
-    const remainingOrbitals = fullOrbitals.slice(coreOrbitals.length);
-
-    return `[${core.symbol}] ${remainingOrbitals.join(" ")}`;
-}
-
 // Ctrl+H toggles the table footer.
 document.addEventListener("keydown", event => {
     if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "h") {
@@ -1184,16 +1019,27 @@ document.addEventListener("keydown", event => {
 });
 
 async function initialize() {
-    const elements = await loadElements();
+    const tableElement = document.getElementById("table-wrap");
+    const loadStatus = document.querySelector(".table-load-status");
+    let elements;
+
+    try {
+        elements = await loadElements();
+    } catch (error) {
+        console.error("Failed to load element data:", error);
+        new PeriodicTable(tableElement, []);
+        tableElement.querySelector(".empty-state")?.remove();
+        loadStatus.textContent =
+            "Unable to load element data. Check your connection and reload the page.";
+        loadStatus.hidden = false;
+        return;
+    }
 
     if (elements.length !== 118) {
         console.warn("Expected 118 elements, got", elements.length);
     }
 
-    new PeriodicTable(
-        document.getElementById("table-wrap"),
-        elements
-    );
+    new PeriodicTable(tableElement, elements);
 }
 
 initialize();
