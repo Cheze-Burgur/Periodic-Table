@@ -948,6 +948,85 @@ button {
     overflow-wrap: anywhere;
 }
 
+.configuration-orbital-notation {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+}
+
+.orbital-notation-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.orbital-notation-toggle::after {
+    content: "(hidden)";
+    font-style: italic;
+    font-size: 0.75rem;
+    color: var(--text-3);
+}
+
+.orbital-notation-toggle[aria-expanded="true"]::after {
+    content: "";
+}
+
+.orbital-notation-toggle:hover {
+    color: var(--accent);
+}
+
+.orbital-notation-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+.orbital-notation-orbitals {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1px 5px;
+}
+
+.orbital-notation-orbitals[hidden] {
+    display: none;
+}
+
+.orbital-notation-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.property-card .orbital-notation-name {
+    color: var(--text-2);
+    font-size: 0.65rem;
+    line-height: 1;
+}
+
+.orbital-notation-boxes {
+    display: flex;
+    gap: 1px;
+}
+
+.property-card .orbital-notation-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-1);
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
 .configuration-toggle {
     background: none;
     border: none;

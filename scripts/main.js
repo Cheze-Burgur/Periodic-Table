@@ -97,6 +97,7 @@ class PeriodicTable {
 
         this.activeCategory = null;
         this.configurationFormat = "full";
+        this.orbitalNotationVisible = true;
         this.spectrumRequestId = 0;
         this.spectrumAbortController = null;
 
@@ -864,7 +865,62 @@ class PeriodicTable {
             fragment.append(exponent);
         }
 
+        fragment.append(this.createOrbitalNotation(fullConfiguration));
+
         return fragment;
+    }
+
+    createOrbitalNotation(configuration) {
+        const notation = this.createElement("div", "configuration-orbital-notation");
+        const label = this.createElement(
+            "button",
+            "configuration-toggle orbital-notation-toggle",
+            "Orbital notation"
+        );
+        const orbitals = this.createElement("div", "orbital-notation-orbitals");
+        const capacities = { s: 2, p: 6, d: 10, f: 14 };
+        const matches = configuration.matchAll(/(\d+)([spdf])(\d+)/g);
+
+        label.type = "button";
+        label.setAttribute("aria-expanded", String(this.orbitalNotationVisible));
+        label.addEventListener("click", () => {
+            this.orbitalNotationVisible = !this.orbitalNotationVisible;
+            label.setAttribute("aria-expanded", String(this.orbitalNotationVisible));
+            orbitals.hidden = !this.orbitalNotationVisible;
+        });
+
+        for (const match of matches) {
+            const subshell = match[2];
+            const electrons = Number(match[3]);
+            const orbitalCount = capacities[subshell] / 2;
+            const group = this.createElement("span", "orbital-notation-group");
+            const name = this.createElement("span", "orbital-notation-name", `${match[1]}${subshell}`);
+            const boxes = this.createElement("span", "orbital-notation-boxes");
+
+            group.setAttribute(
+                "aria-label",
+                `${match[1]}${subshell}: ${electrons} electron${electrons === 1 ? "" : "s"}`
+            );
+
+            for (let index = 0; index < orbitalCount; index += 1) {
+                const box = this.createElement("span", "orbital-notation-box");
+                const arrows = [
+                    electrons > index ? "↑" : "",
+                    electrons > orbitalCount + index ? "↓" : ""
+                ].join("");
+
+                box.textContent = arrows;
+                box.setAttribute("aria-hidden", "true");
+                boxes.append(box);
+            }
+
+            group.append(name, boxes);
+            orbitals.append(group);
+        }
+
+        orbitals.hidden = !this.orbitalNotationVisible;
+        notation.append(label, orbitals);
+        return notation;
     }
 
     updateElectronConfiguration() {
