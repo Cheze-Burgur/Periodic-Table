@@ -3,6 +3,7 @@ const SPECTRUM_CACHE_VERSION = 1;
 const SPECTRUM_CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 const spectrumMemoryCache = new Map();
 const spectrumRequests = new Map();
+let spectrumDatasetVersion;
 
 function parseCsv(text) {
     const rows = [];
@@ -82,42 +83,26 @@ function parseSpectrumData(rawText) {
     });
 }
 
-function buildSpectrumRequestUrl(symbol) {
-    const url = new URL("https://pml.nist.gov/cgi-bin/ASD/lines1.pl");
-    const parameters = {
-        spectra: `${symbol} I`,
-        output_type: "0",
-        low_w: "380",
-        upp_w: "780",
-        unit: "1",
-        submit: "Retrieve Data",
-        de: "0",
-        plot_out: "0",
-        format: "2",
-        line_out: "0",
-        en_unit: "0",
-        output: "0",
-        page_size: "15",
-        show_obs_wl: "1",
-        unc_out: "1",
-        order_out: "0",
-        show_av: "2",
-        tsb_value: "0",
-        A_out: "0",
-        intens_out: "on",
-        allowed_out: "1",
-        forbid_out: "1",
-        conf_out: "on",
-        term_out: "on",
-        enrg_out: "on",
-        J_out: "on"
-    };
-
-    for (const [name, value] of Object.entries(parameters)) {
-        url.searchParams.set(name, value);
+async function getSpectrumDatasetVersion() {
+    if (spectrumDatasetVersion) {
+        return spectrumDatasetVersion;
     }
 
-    return url;
+    const response = await fetch(
+        new URL("../data/spectra/manifest.json", import.meta.url),
+        { cache: "no-cache" }
+    );
+    if (!response.ok) {
+        throw new Error(`Unable to load spectrum manifest (HTTP ${response.status}).`);
+    }
+
+    const manifest = await response.json();
+    if (typeof manifest.version !== "string" || manifest.version === "") {
+        throw new Error("Spectrum manifest has no valid version.");
+    }
+
+    spectrumDatasetVersion = manifest.version;
+    return spectrumDatasetVersion;
 }
 
 function openSpectrumCache() {
@@ -193,7 +178,13 @@ async function writeSpectrumCache(key, spectrum, fetchedAt) {
 }
 
 async function loadSpectrumData(element, signal) {
-    const cacheKey = `v${SPECTRUM_CACHE_VERSION}:${element.symbol}`;
+    const datasetVersion = await getSpectrumDatasetVersion();
+    if (signal?.aborted) {
+        throw new DOMException("Spectrum request was aborted.", "AbortError");
+    }
+
+    const cacheKey =
+        `v${SPECTRUM_CACHE_VERSION}:${datasetVersion}:${element.symbol}`;
 
     if (spectrumMemoryCache.has(cacheKey)) {
         const entry = spectrumMemoryCache.get(cacheKey);
@@ -232,11 +223,15 @@ async function loadSpectrumData(element, signal) {
         let responseText;
 
         try {
-            const response = await fetch(buildSpectrumRequestUrl(element.symbol), {
-                signal: controller.signal
-            });
+            const response = await fetch(
+                new URL(`../data/spectra/${element.symbol}.csv`, import.meta.url),
+                {
+                    signal: controller.signal,
+                    cache: "no-cache"
+                }
+            );
             if (!response.ok) {
-                throw new Error(`NIST request failed with HTTP ${response.status}.`);
+                throw new Error(`Unable to load spectrum file (HTTP ${response.status}).`);
             }
             responseText = await response.text();
         } finally {
