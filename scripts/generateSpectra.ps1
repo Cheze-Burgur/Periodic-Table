@@ -1,5 +1,7 @@
 param(
     [int]$DelayMilliseconds = 1000,
+    [int]$MaximumRetries = 3,
+    [int]$RetryBaseDelaySeconds = 2,
     [switch]$Force
 )
 
@@ -7,6 +9,54 @@ $ErrorActionPreference = "Stop"
 
 if ($DelayMilliseconds -lt 0) {
     throw "DelayMilliseconds must be zero or greater."
+}
+
+if ($MaximumRetries -lt 0) {
+    throw "MaximumRetries must be zero or greater."
+}
+
+if ($RetryBaseDelaySeconds -lt 0) {
+    throw "RetryBaseDelaySeconds must be zero or greater."
+}
+
+function Get-NistSpectrum {
+    param(
+        [string]$Uri,
+        [string]$Symbol,
+        [int]$MaxRetries,
+        [int]$RetryBaseDelaySeconds
+    )
+
+    for ($attempt = 0; $attempt -le $MaxRetries; $attempt++) {
+        try {
+            $response = Invoke-WebRequest -Uri $Uri -TimeoutSec 60 -UseBasicParsing
+            $csv = $response.Content
+
+            if ($response.StatusCode -ne 200) {
+                throw "NIST returned HTTP $($response.StatusCode)."
+            }
+
+            if ($csv -notmatch '(?im)^obs_wl_(air|vac)\(nm\),.*\bintens\b') {
+                if ($csv -match '(?is)No lines are available in ASD with the parameters selected') {
+                    return "obs_wl_air(nm),intens`n"
+                }
+
+                throw "NIST returned invalid spectral data."
+            }
+
+            return $csv
+        } catch {
+            if ($attempt -ge $MaxRetries) {
+                throw "Failed to retrieve valid spectral data for $Symbol after $($attempt + 1) attempts: $($_.Exception.Message)"
+            }
+
+            $delaySeconds = $RetryBaseDelaySeconds * [Math]::Pow(2, $attempt)
+            Write-Warning "Request for $Symbol failed on attempt $($attempt + 1); retrying in $delaySeconds seconds. $($_.Exception.Message)"
+            if ($delaySeconds -gt 0) {
+                Start-Sleep -Seconds $delaySeconds
+            }
+        }
+    }
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -64,19 +114,13 @@ for ($index = 0; $index -lt $elements.Count; $index++) {
     $uri = "https://pml.nist.gov/cgi-bin/ASD/lines1.pl?$($query -join '&')"
     Write-Output "[$($index + 1)/$($elements.Count)] Downloading $($element.symbol)."
 
-    $response = Invoke-WebRequest -Uri $uri -TimeoutSec 60 -UseBasicParsing
-    $csv = $response.Content
-    if ($response.StatusCode -ne 200) {
-        throw "NIST returned invalid spectral data for $($element.symbol)."
-    }
-
-    if ($csv -notmatch '(?im)^obs_wl_(air|vac)\(nm\),.*\bintens\b') {
-        if ($csv -match '(?is)No lines are available in ASD with the parameters selected') {
-            $csv = "obs_wl_air(nm),intens`n"
-            Write-Output "NIST has no observed lines for $($element.symbol); saving an empty spectrum."
-        } else {
-            throw "NIST returned invalid spectral data for $($element.symbol)."
-        }
+    $csv = Get-NistSpectrum `
+        -Uri $uri `
+        -Symbol $element.symbol `
+        -MaxRetries $MaximumRetries `
+        -RetryBaseDelaySeconds $RetryBaseDelaySeconds
+    if ($csv -eq "obs_wl_air(nm),intens`n") {
+        Write-Output "NIST has no observed lines for $($element.symbol); saving an empty spectrum."
     }
 
     [System.IO.File]::WriteAllText(
@@ -90,18 +134,46 @@ for ($index = 0; $index -lt $elements.Count; $index++) {
     }
 }
 
-$manifest = [ordered]@{
-    version = [DateTime]::UtcNow.ToString("yyyyMMddHHmmss")
-    generatedAt = [DateTime]::UtcNow.ToString("o")
-    source = "NIST Atomic Spectra Database"
-    wavelengthRangeNm = @(380, 780)
-    elementCount = $elements.Count
-}
-$manifestPath = Join-Path $spectraDirectory "manifest.json"
-[System.IO.File]::WriteAllText(
-    $manifestPath,
-    ($manifest | ConvertTo-Json),
-    [System.Text.UTF8Encoding]::new($false)
+$spectrumHashes = @(
+    foreach ($element in $elements) {
+        $outputPath = Join-Path $spectraDirectory "$($element.symbol).csv"
+        $fileHash = (Get-FileHash -LiteralPath $outputPath -Algorithm SHA256).Hash
+        "{0}:{1}" -f $element.symbol, $fileHash
+    }
 )
 
-Write-Output "Wrote spectrum manifest for $($elements.Count) elements."
+$hashInput = [System.Text.Encoding]::UTF8.GetBytes(($spectrumHashes -join "`n"))
+$sha256 = [System.Security.Cryptography.SHA256]::Create()
+try {
+    $version = [System.BitConverter]::ToString(
+        $sha256.ComputeHash($hashInput)
+    ).Replace("-", "").ToLowerInvariant()
+} finally {
+    $sha256.Dispose()
+}
+
+$manifestPath = Join-Path $spectraDirectory "manifest.json"
+$existingVersion = $null
+if (Test-Path -LiteralPath $manifestPath) {
+    $existingVersion = (Get-Content -Raw $manifestPath | ConvertFrom-Json).version
+}
+
+if ($existingVersion -ceq $version) {
+    Write-Output "Spectrum content is unchanged; keeping the existing manifest."
+} else {
+    $manifest = [ordered]@{
+        version = $version
+        generatedAt = [DateTime]::UtcNow.ToString("o")
+        source = "NIST Atomic Spectra Database"
+        wavelengthRangeNm = @(380, 780)
+        elementCount = $elements.Count
+    }
+
+    [System.IO.File]::WriteAllText(
+        $manifestPath,
+        ($manifest | ConvertTo-Json),
+        [System.Text.UTF8Encoding]::new($false)
+    )
+
+    Write-Output "Wrote spectrum manifest for $($elements.Count) elements."
+}

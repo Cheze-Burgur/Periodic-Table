@@ -1,0 +1,76 @@
+
+name: Update Periodic Table Data
+
+on:
+  # Run on the first of each month at 06:00 UTC
+  schedule:
+  - cron: "0 6 1 * *"
+
+  # Allow manual execution
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-periodic-table-data
+  cancel-in-progress: false
+
+jobs:
+  update-data:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download upstream element data
+        shell: pwsh
+        run: |
+          $url = "https://raw.githubusercontent.com/Bowserinator/Periodic-Table-JSON/master/PeriodicTableJSON.json"
+
+          $tempFile = Join-Path $env:RUNNER_TEMP "elements.json"
+
+          Invoke-WebRequest -Uri $url -OutFile $tempFile
+
+          # Validate the downloaded JSON before replacing anything
+          $data = Get-Content -Raw $tempFile | ConvertFrom-Json
+
+          if (-not $data.elements -or $data.elements.Count -lt 118) {
+              throw "Downloaded element data is incomplete."
+          }
+
+          $numbers = @($data.elements | ForEach-Object { $_.number })
+
+          foreach ($number in 1..118) {
+              if ($number -notin $numbers) {
+                  throw "Missing element with atomic number $number."
+              }
+          }
+
+          Copy-Item $tempFile "data/elements.json" -Force
+
+          Write-Host "Successfully downloaded $($data.elements.Count) elements."
+
+      - name: Refresh spectral data
+        shell: pwsh
+        run: |
+          ./scripts/generateSpectra.ps1 -Force
+
+      - name: Commit updated data
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/elements.json data/spectra/
+
+          $changes = git status --porcelain
+
+          if ($changes) {
+              git commit -m "Update periodic table and spectral data"
+              git push
+          }
+          else {
+              Write-Host "No data changes detected."
+          }
