@@ -1,10 +1,10 @@
 {
-    "version": "20261105003014",
-    "generatedAt": "2026-11-05T00:30:14.2897414Z",
-    "source": "NIST Atomic Spectra Database",
-    "wavelengthRangeNm": [
-        380,
-        780
-    ],
-    "elementCount": 118
+  "version": "a06300b14cfeb54522d236601d1ba945a2c777edd9690fd4fd07eeb7830f0ec8",
+  "generatedAt": "2026-11-09T20:24:41.7155948Z",
+  "source": "NIST Atomic Spectra Database",
+  "wavelengthRangeNm": [
+    380,
+    780
+  ],
+  "elementCount": 118
 }
