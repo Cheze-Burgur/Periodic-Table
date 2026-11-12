@@ -153,27 +153,37 @@ try {
 }
 
 $manifestPath = Join-Path $spectraDirectory "manifest.json"
+$existingManifest = $null
 $existingVersion = $null
 if (Test-Path -LiteralPath $manifestPath) {
-    $existingVersion = (Get-Content -Raw $manifestPath | ConvertFrom-Json).version
+    $existingManifest = Get-Content -Raw $manifestPath | ConvertFrom-Json
+    $existingVersion = $existingManifest.version
 }
 
+$checkedAt = [DateTime]::UtcNow.ToString("o")
+$generatedAt = $checkedAt
+if ($existingVersion -ceq $version -and $existingManifest.generatedAt) {
+    $generatedAt = $existingManifest.generatedAt
+}
+
+$manifest = [ordered]@{
+    version = $version
+    generatedAt = $generatedAt
+    lastCheckedAt = $checkedAt
+    source = "NIST Atomic Spectra Database"
+    wavelengthRangeNm = @(380, 780)
+    elementCount = $elements.Count
+}
+
+[System.IO.File]::WriteAllText(
+    $manifestPath,
+    ($manifest | ConvertTo-Json),
+    [System.Text.UTF8Encoding]::new($false)
+)
+
 if ($existingVersion -ceq $version) {
-    Write-Output "Spectrum content is unchanged; keeping the existing manifest."
-} else {
-    $manifest = [ordered]@{
-        version = $version
-        generatedAt = [DateTime]::UtcNow.ToString("o")
-        source = "NIST Atomic Spectra Database"
-        wavelengthRangeNm = @(380, 780)
-        elementCount = $elements.Count
-    }
-
-    [System.IO.File]::WriteAllText(
-        $manifestPath,
-        ($manifest | ConvertTo-Json),
-        [System.Text.UTF8Encoding]::new($false)
-    )
-
+    Write-Output "Spectrum content is unchanged; updated the manifest check time."
+}
+else {
     Write-Output "Wrote spectrum manifest for $($elements.Count) elements."
 }
