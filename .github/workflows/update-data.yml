@@ -48,7 +48,7 @@ jobs:
               }
           }
 
-          Copy-Item $tempFile "data/elements.json" -Force
+          Copy-Item $tempFile "data/elements/elements.json" -Force
 
           Write-Host "Successfully downloaded $($data.elements.Count) elements."
 
@@ -63,7 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add -- data/elements.json "data/spectra/*.csv" data/spectra/manifest.json
+          git add -- data/elements/elements.json "data/spectra/*.csv" data/spectra/manifest.json
 
           $changedFiles = @(git diff --cached --name-only)
           if ($LASTEXITCODE -ne 0) {
@@ -71,7 +71,7 @@ jobs:
           }
 
           $dataChanges = @($changedFiles | Where-Object {
-              $_ -eq "data/elements.json" -or $_ -match '^data/spectra/[^/]+\.csv$'
+              $_ -eq "data/elements/elements.json" -or $_ -match '^data/spectra/[^/]+\.csv$'
           })
 
           if ($changedFiles.Count -gt 0) {

@@ -1,8 +1,7 @@
 import {
     generateElectronConfiguration,
     generateShorthandConfiguration,
-    loadElements,
-    SUBLIMATION_POINTS_K
+    loadElements
 } from "./processElementData.js";
 import {
     generateSpectrumImage,
@@ -705,10 +704,7 @@ class PeriodicTable {
         const freezingPoint = element.freezing ?? element.melting;
         const hasSublimationPoint = element.sublimation !== null &&
             element.sublimation !== undefined && element.sublimation !== "";
-        const hasStandardPressureSublimationPoint =
-            SUBLIMATION_POINTS_K[element.number] !== undefined;
-        const useSublimationCard = hasSublimationPoint &&
-            (freezingPoint == null || hasStandardPressureSublimationPoint);
+        const useSublimationCard = hasSublimationPoint;
 
         this.sublimationCard.hidden = !useSublimationCard;
         this.boilingCard.hidden = useSublimationCard;

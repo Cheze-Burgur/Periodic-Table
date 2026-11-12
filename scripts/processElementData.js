@@ -1,9 +1,3 @@
-// Sublimation points for elements that sublime instead of melting or boiling.
-const SUBLIMATION_POINTS_K = {
-    6: 3915,
-    33: 887
-};
-
 function normalizeElement(element) {
     function kelvinToCelsius(value) {
         return value == null ? null : value - 273.15;
@@ -92,7 +86,8 @@ function normalizeElement(element) {
         boiling: kelvinToCelsius(element.boil),
         melting: kelvinToCelsius(element.melt),
         sublimation: kelvinToCelsius(
-            element.sublimation ?? SUBLIMATION_POINTS_K[element.number]
+            element.sublimation ??
+            element.sublimate
         ),
 
         shells: element.shells ?? [],
@@ -103,16 +98,71 @@ function normalizeElement(element) {
 }
 
 async function loadElements() {
-    const response = await fetch("./data/elements.json");
+    const [sourceResponse, overridesResponse] = await Promise.all([
+        fetch("./data/elements/elements.json"),
+        fetch("./data/elements/data.json")
+    ]);
 
-    if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
+    if (!sourceResponse.ok) {
+        throw new Error(`Unable to load source element data (HTTP ${sourceResponse.status}).`);
     }
 
-    const data = await response.json();
+    if (!overridesResponse.ok) {
+        throw new Error(`Unable to load element overrides (HTTP ${overridesResponse.status}).`);
+    }
 
-    return data.elements
-        .filter(element => element.number >= 1 && element.number <= 118)
+    const [sourceData, overrideData] = await Promise.all([
+        sourceResponse.json(),
+        overridesResponse.json()
+    ]);
+
+    if (!Array.isArray(sourceData.elements)) {
+        throw new Error("Source element data has no valid elements array.");
+    }
+
+    if (!Array.isArray(overrideData.elements)) {
+        throw new Error("Element override data has no valid elements array.");
+    }
+
+    const sourceElements = sourceData.elements
+        .filter(element => element.number >= 1 && element.number <= 118);
+    const sourceByNumber = new Map(
+        sourceElements.map(element => [element.number, element])
+    );
+    const sourceByName = new Map(
+        sourceElements.map(element => [element.name.trim().toLowerCase(), element])
+    );
+    const overridesByNumber = new Map();
+
+    for (const override of overrideData.elements) {
+        if (!override || typeof override !== "object" || Array.isArray(override)) {
+            throw new Error("Element override entries must be objects.");
+        }
+
+        const sourceElement = Number.isInteger(override.number)
+            ? sourceByNumber.get(override.number)
+            : typeof override.name === "string"
+                ? sourceByName.get(override.name.trim().toLowerCase())
+                : undefined;
+
+        if (!sourceElement) {
+            throw new Error(
+                `Element override does not match a source element: ${override.name ?? override.number ?? "unknown"}.`
+            );
+        }
+
+        if (overridesByNumber.has(sourceElement.number)) {
+            throw new Error(`Multiple overrides found for element ${sourceElement.number}.`);
+        }
+
+        overridesByNumber.set(sourceElement.number, override);
+    }
+
+    return sourceElements
+        .map(element => ({
+            ...element,
+            ...overridesByNumber.get(element.number)
+        }))
         .map(normalizeElement);
 }
 
@@ -227,7 +277,6 @@ function generateShorthandConfiguration(atomicNumber, fullConfiguration) {
 }
 
 export {
-    SUBLIMATION_POINTS_K,
     generateElectronConfiguration,
     generateShorthandConfiguration,
     loadElements

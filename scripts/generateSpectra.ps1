@@ -60,7 +60,7 @@ function Get-NistSpectrum {
 }
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$elementsPath = Join-Path $projectRoot "data\elements.json"
+$elementsPath = Join-Path $projectRoot "data\elements\elements.json"
 $spectraDirectory = Join-Path $projectRoot "data\spectra"
 $elements = (Get-Content -Raw $elementsPath | ConvertFrom-Json).elements |
     Where-Object { $_.number -ge 1 -and $_.number -le 118 } |
