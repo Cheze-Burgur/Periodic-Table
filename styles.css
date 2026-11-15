@@ -162,7 +162,7 @@ button {
     overflow: hidden;
 }
 
-.table-load-status {
+#table-load-status {
     color: #fca5a5;
     margin-bottom: 12px;
 }
@@ -196,11 +196,95 @@ button {
 }
 
 /* ===== Main periodic table ===== */
-.main-grid {
+#main-grid {
     display: grid;
     grid-template-columns: repeat(18, var(--element-width));
     grid-template-rows: repeat(7, var(--element-height));
     gap: var(--element-gap);
+}
+
+#element-preview {
+    z-index: 1;
+    grid-column: 3 / 13;
+    grid-row: 1 / 4;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    padding: 12px 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-2);
+    pointer-events: none;
+}
+
+#preview-placeholder,
+#preview-content {
+    grid-area: 1 / 1;
+    width: 100%;
+    transition: opacity 180ms ease;
+}
+
+#preview-placeholder {
+    margin: 0;
+    color: var(--text-2);
+    text-align: center;
+}
+
+#preview-content {
+    display: grid;
+    grid-template-columns: 140px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    opacity: 0;
+}
+
+#element-preview[data-active="true"] #preview-placeholder {
+    opacity: 0;
+}
+
+#element-preview[data-active="true"] #preview-content {
+    opacity: 1;
+}
+
+#preview-symbol-number,
+#preview-category,
+#preview-facts span {
+    color: var(--text-2);
+    font-size: 0.7rem;
+}
+
+#preview-heading {
+    min-width: 0;
+}
+
+#preview-name {
+    overflow: hidden;
+    font-size: 1.1rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#preview-facts {
+    display: grid;
+    gap: 6px;
+    min-width: 105px;
+}
+
+#preview-facts p {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+#preview-facts strong {
+    overflow: hidden;
+    color: var(--text-1);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 /* Element cards */
@@ -495,7 +579,7 @@ button {
 }
 
 /* ===== Detached element series ===== */
-.series-section {
+#series-section {
     width: max-content;
     margin-top: 22px;
 }
@@ -532,7 +616,7 @@ button {
     font-weight: 600;
 }
 
-.legend {
+#legend {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -634,26 +718,91 @@ button {
 }
 
 /* ===== Element details ===== */
-.details-section {
-    margin-top: 24px;
-    padding: 20px;
+#details-panel {
+    position: fixed;
+    z-index: 20;
+    left: 50%;
+    bottom: 0;
+    width: min(1200px, calc(100vw - 32px));
+    max-height: min(85vh, 900px);
+    max-height: min(85dvh, 900px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0;
+    padding: 0;
 
     background: var(--bg-2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -12px 40px #0009;
+
+    transform: translate(-50%, calc(100% + 24px));
+    visibility: hidden;
+    pointer-events: none;
+    transition: transform 280ms ease, visibility 0s linear 280ms;
 }
 
-.details-section>h2 {
+#details-panel[aria-hidden="false"] {
+    transform: translate(-50%, 0);
+    visibility: visible;
+    pointer-events: auto;
+    transition: transform 280ms ease, visibility 0s;
+}
+
+#details-panel-heading {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-2);
+}
+
+#details-title {
     font-size: 1rem;
-    margin-bottom: 16px;
 }
 
-.details-empty {
+#details-close {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-1);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+#details-close:hover {
+    color: #eb2657;
+}
+
+#details-close:focus-visible {
+    color: #eb2657;
+    outline: 2px solid var(--text-1);
+    outline-offset: 2px;
+    background: var(--bg-3);
+}
+
+#details-empty,
+#details-content {
+    padding: 20px;
+}
+
+#details-empty {
     color: var(--text-3);
     font-size: 0.85rem;
 }
 
-.details-content[hidden] {
+#details-content[hidden] {
     display: none;
 }
 
@@ -673,7 +822,7 @@ button {
     align-items: center;
 }
 
-.electron-diagram-svg {
+#electron-diagram {
     width: 180px;
     height: 180px;
     overflow: visible;
@@ -695,12 +844,22 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    #details-panel {
+        transition: none;
+    }
+
+    #preview-placeholder,
+    #preview-content {
+        transition: none;
+    }
+
     .electron-orbit {
         animation: none;
     }
 }
 
-.details-symbol {
+#details-symbol,
+#preview-symbol {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -718,17 +877,20 @@ button {
     color: var(--card-text);
 }
 
-.details-symbol strong {
+#details-symbol strong,
+#preview-symbol strong {
     font-size: 3rem;
     line-height: 1.2;
 }
 
-.details-symbol span {
+#details-symbol span,
+#preview-symbol span {
     font-size: 0.75rem;
     color: var(--card-text-2);
 }
 
-.details-symbol .element-radioactive-icon {
+#details-radioactive-icon,
+#preview-radioactive-icon {
     position: absolute;
     top: 7px;
     right: 7px;
@@ -737,7 +899,8 @@ button {
     height: 24px;
 }
 
-.details-symbol .element-radioactive-icon svg {
+#details-radioactive-icon svg,
+#preview-radioactive-icon svg {
     width: 100%;
     height: 100%;
 }
@@ -746,13 +909,13 @@ button {
     min-width: 0;
 }
 
-.details-name {
+#details-name {
     font-size: 1.6rem;
     line-height: 1.3;
     margin-bottom: 6px;
 }
 
-.details-category {
+#details-category {
     display: inline-block;
     padding: 3px 9px;
 
@@ -779,7 +942,7 @@ button {
     grid-column: span 1;
 }
 
-.details-properties>.property-card:not(.period-card):not(.group-card):not(.summary-card):not(.sublimation-card):not(.spectra-card) {
+.details-properties>.property-card:not(.period-card):not(.group-card):not(.summary-card):not(#sublimation-card):not(.spectra-card) {
     grid-column: span 2;
 }
 
@@ -800,7 +963,7 @@ button {
     display: none;
 }
 
-.sublimation-card,
+#sublimation-card,
 .spectra-card {
     grid-column: span 4;
 }
@@ -809,7 +972,7 @@ button {
     grid-column: 1 / -1;
 }
 
-.summary-card .details-summary-source-label {
+#details-summary-source-label {
     margin-left: 4px;
 }
 
@@ -881,7 +1044,7 @@ button {
     color: var(--text-3);
 }
 
-.spectrum-status {
+#spectrum-status {
     color: var(--text-3);
     font-size: 0.75rem;
     line-height: 1.4;
@@ -916,14 +1079,14 @@ button {
     overflow-wrap: anywhere;
 }
 
-.radioactive-note {
+#radioactive-note {
     color: var(--text-3);
     font-size: 0.7rem;
     font-style: italic;
     line-height: 1.4;
 }
 
-.radioactive-note[hidden] {
+#radioactive-note[hidden] {
     display: none;
 }
 
@@ -941,7 +1104,7 @@ button {
     margin-bottom: 8px;
 }
 
-.details-configuration {
+#details-configuration {
     color: var(--text-2);
     font-size: 0.85rem;
     line-height: 1.8;
@@ -1051,7 +1214,7 @@ button {
 }
 
 /* Empty state */
-.empty-state {
+#empty-state {
     grid-column: 1 / -1;
     display: flex;
     align-items: center;
@@ -1067,11 +1230,11 @@ button {
     font-size: 0.8rem;
 }
 
-.table-footer.footer-hidden {
+#table-footer.footer-hidden {
     display: none;
 }
 
-.table-footer {
+#table-footer {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
@@ -1085,11 +1248,11 @@ button {
     color: var(--text-2);
 }
 
-.table-footer section {
+#table-footer section {
     margin: 0;
 }
 
-.table-footer a {
+#table-footer a {
     color: var(--text-1);
     text-decoration: none;
     text-decoration-color: var(--halogen-bg);
@@ -1097,12 +1260,12 @@ button {
     transition: color 0.2s ease;
 }
 
-.table-footer a:hover {
+#table-footer a:hover {
     text-decoration: underline;
     color: var(--halogen-border);
 }
 
-.table-footer a:focus-visible {
+#table-footer a:focus-visible {
     text-decoration: underline;
     outline: 2px solid var(--halogen-border);
     outline-offset: 3px;
@@ -1116,7 +1279,7 @@ button {
     }
 
     .summary-card,
-    .sublimation-card,
+    #sublimation-card,
     .spectra-card {
         grid-column: span 4;
     }
@@ -1135,16 +1298,67 @@ button {
         padding: 12px;
     }
 
-    .details-section {
+    #details-panel {
+        width: calc(100vw - 20px);
+        max-height: 90vh;
+        max-height: 90dvh;
+    }
+
+    #details-panel-heading {
         padding: 14px;
     }
 
-    .details-symbol {
+    #details-empty,
+    #details-content {
+        padding: 14px;
+    }
+
+    .details-header {
+        display: grid;
+        grid-template-columns: 80px minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .electron-diagram {
+        grid-column: 1 / -1;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    #details-symbol {
         width: 80px;
         height: 80px;
     }
 
-    .details-name {
+    #details-symbol strong {
+        font-size: 1.5rem;
+    }
+
+    #details-radioactive-icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    #details-name {
         font-size: 1.3rem;
+    }
+
+    .details-properties {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .period-card,
+    .group-card {
+        grid-column: span 1;
+    }
+
+    .details-properties>.property-card:not(.period-card):not(.group-card):not(.summary-card):not(#sublimation-card):not(.spectra-card) {
+        grid-column: 1 / -1;
+    }
+
+    .summary-card,
+    #sublimation-card,
+    .spectra-card {
+        grid-column: 1 / -1;
     }
 }

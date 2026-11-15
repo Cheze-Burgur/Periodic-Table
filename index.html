@@ -18,7 +18,7 @@
 
         <section class="legend-section">
             <h2 class="section-heading">Element Categories</h2>
-            <div class="legend">
+            <div id="legend" class="legend">
                 <button class="legend-item" type="button" data-category="hydrogen"
                     title="Highlight Hydrogen; click again to clear the highlight." aria-pressed="false"><span
                         class="legend-color"></span><span>Hydrogen</span></button>
@@ -65,7 +65,7 @@
         </section>
 
         <section class="table-container">
-            <p class="table-load-status" role="alert" hidden></p>
+            <p id="table-load-status" class="table-load-status" role="alert" hidden></p>
             <div class="table-scroll">
                 <div class="periodic-layout">
                     <div class="period-labels" aria-label="Periods">
@@ -77,27 +77,47 @@
                         <div class="period-label">6</div>
                         <div class="period-label">7</div>
                     </div>
-                    <div class="main-grid">
+                    <div id="main-grid" class="main-grid">
                         <div class="series-placeholder lanthanide-placeholder" data-category="lanthanide">
                             <strong>57–71</strong><span>Lanthanides</span>
                         </div>
                         <div class="series-placeholder actinide-placeholder" data-category="actinide">
                             <strong>89–103</strong><span>Actinides</span>
                         </div>
+                        <div id="element-preview" aria-live="polite" aria-atomic="true">
+                            <p id="preview-placeholder">
+                                Hover over or select an element to view its information.
+                            </p>
+                            <div id="preview-content" aria-hidden="true">
+                                <div id="preview-symbol">
+                                    <span id="preview-symbol-number"></span>
+                                    <strong id="preview-symbol-text"></strong>
+                                    <span id="preview-radioactive-icon" class="element-radioactive-icon"></span>
+                                </div>
+                                <div id="preview-heading">
+                                    <h3 id="preview-name"></h3>
+                                    <span id="preview-category"></span>
+                                </div>
+                                <div id="preview-facts">
+                                    <p><span>Atomic mass</span><strong id="preview-mass"></strong></p>
+                                    <p><span>Density</span><strong id="preview-density"></strong></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="series-section">
+                <div id="series-section" class="series-section">
                     <div class="series-row">
                         <div class="series-label">Lanthanides</div>
-                        <div class="series-elements" data-series="lanthanide"></div>
+                        <div id="lanthanide-elements" class="series-elements" data-series="lanthanide"></div>
                     </div>
                     <div class="series-row">
                         <div class="series-label">Actinides</div>
-                        <div class="series-elements" data-series="actinide"></div>
+                        <div id="actinide-elements" class="series-elements" data-series="actinide"></div>
                     </div>
                 </div>
             </div>
-            <footer class="table-footer">
+            <footer id="table-footer" class="table-footer">
                 <section>Data sourced from Browserinator's <a href="https://github.com/Bowserinator/Periodic-Table-JSON"
                         target="_blank" rel="noopener noreferrer">Periodic Table JSON</a> project</section>
                 <section>Table designed by <a href="https://github.com/Cheze-Burgur" target="_blank"
@@ -105,31 +125,34 @@
             </footer>
         </section>
 
-        <section class="details-section">
-            <h2>Element Details</h2>
+        <section id="details-panel" aria-label="Element details" aria-hidden="true" inert>
+            <div id="details-panel-heading">
+                <h2 id="details-title">Element Details</h2>
+                <button id="details-close" type="button" aria-label="Close element details">×</button>
+            </div>
 
-            <p class="details-empty">
+            <p id="details-empty" class="details-empty">
                 Select an element to view its information.
             </p>
 
-            <div class="details-content" hidden>
+            <div id="details-content" class="details-content" hidden>
 
                 <!-- Element header -->
                 <div class="details-header">
 
-                    <div class="details-symbol">
-                        <span class="details-symbol-number"></span>
-                        <strong class="details-symbol-text"></strong>
-                        <span class="element-radioactive-icon"></span>
+                    <div id="details-symbol" class="details-symbol">
+                        <span id="details-symbol-number" class="details-symbol-number"></span>
+                        <strong id="details-symbol-text" class="details-symbol-text"></strong>
+                        <span id="details-radioactive-icon" class="element-radioactive-icon"></span>
                     </div>
 
                     <div class="details-heading">
-                        <h3 class="details-name"></h3>
-                        <span class="details-category"></span>
+                        <h3 id="details-name" class="details-name"></h3>
+                        <span id="details-category" class="details-category"></span>
                     </div>
 
                     <div class="electron-diagram">
-                        <svg class="electron-diagram-svg" viewBox="0 0 200 200" role="img"
+                        <svg id="electron-diagram" class="electron-diagram-svg" viewBox="0 0 200 200" role="img"
                             aria-label="Electron shell diagram">
                         </svg>
                     </div>
@@ -139,66 +162,67 @@
                 <div class="details-properties">
 
                     <div class="property-card summary-card">
-                        <span>Element Summary <span class="source-label details-summary-source-label">(from <a
+                        <span>Element Summary <span id="details-summary-source-label"
+                                class="source-label details-summary-source-label">(from <a id="details-summary-source"
                                     class="source-link details-summary-source" target="_blank"
                                     rel="noopener noreferrer">Wikipedia</a>)</span></span>
-                        <p class="details-summary"></p>
+                        <p id="details-summary" class="details-summary"></p>
                     </div>
 
                     <div class="property-card period-card">
-                        <span class="details-period-label">Period</span>
-                        <strong class="details-period"></strong>
+                        <span id="details-period-label" class="details-period-label">Period</span>
+                        <strong id="details-period" class="details-period"></strong>
                     </div>
 
                     <div class="property-card group-card">
-                        <span class="details-group-label">Group</span>
-                        <strong class="details-group"></strong>
+                        <span id="details-group-label" class="details-group-label">Group</span>
+                        <strong id="details-group" class="details-group"></strong>
                     </div>
 
                     <div class="property-card">
                         <span>Atomic Mass</span>
-                        <strong class="details-mass"></strong>
-                        <span class="radioactive-note" hidden></span>
+                        <strong id="details-mass" class="details-mass"></strong>
+                        <span id="radioactive-note" class="radioactive-note" hidden></span>
                     </div>
 
                     <div class="property-card">
                         <span>Density</span>
-                        <strong class="details-density"></strong>
+                        <strong id="details-density" class="details-density"></strong>
                     </div>
 
                     <div class="property-card">
                         <span>Phase (at standard temperature/pressure)</span>
-                        <strong class="details-phase"></strong>
+                        <strong id="details-phase" class="details-phase"></strong>
                     </div>
 
                     <div class="property-card">
                         <span>Electronegativity</span>
-                        <strong class="details-electronegativity"></strong>
+                        <strong id="details-electronegativity" class="details-electronegativity"></strong>
                     </div>
 
                     <div class="property-card">
                         <span>Electron Affinity (kJ/mol)</span>
-                        <strong class="details-affinity"></strong>
+                        <strong id="details-affinity" class="details-affinity"></strong>
                     </div>
 
-                    <div class="property-card sublimation-card" hidden>
+                    <div id="sublimation-card" class="property-card sublimation-card" hidden>
                         <span>Sublimation Point</span>
-                        <strong class="details-sublimation"></strong>
+                        <strong id="details-sublimation" class="details-sublimation"></strong>
                     </div>
 
-                    <div class="property-card boiling-card">
+                    <div id="boiling-card" class="property-card boiling-card">
                         <span>Boiling Point</span>
-                        <strong class="details-boiling"></strong>
+                        <strong id="details-boiling" class="details-boiling"></strong>
                     </div>
 
-                    <div class="property-card freezing-card">
+                    <div id="freezing-card" class="property-card freezing-card">
                         <span>Freezing Point</span>
-                        <strong class="details-freezing"></strong>
+                        <strong id="details-freezing" class="details-freezing"></strong>
                     </div>
 
                     <div class="property-card">
                         <span>Electron Configuration</span>
-                        <div class="details-configuration"></div>
+                        <div id="details-configuration" class="details-configuration"></div>
                     </div>
 
                     <div class="property-card">
@@ -211,7 +235,7 @@
                                         <th scope="col">Energy</th>
                                     </tr>
                                 </thead>
-                                <tbody class="details-ionization"></tbody>
+                                <tbody id="details-ionization" class="details-ionization"></tbody>
                             </table>
                         </div>
                     </div>
@@ -220,7 +244,7 @@
                         <span>Spectral Lines <span class="source-label">(from <a class="source-link"
                                     href="https://pml.nist.gov/PhysRefData/ASD/lines_form.html" target="_blank"
                                     rel="noopener noreferrer">NIST ASD</a>)</span></span>
-                        <p class="spectrum-status" role="status" aria-live="polite"></p>
+                        <p id="spectrum-status" class="spectrum-status" role="status" aria-live="polite"></p>
                         <canvas id="spectrum-canvas" width="800" height="260" role="img"
                             aria-label="Observed visible emission spectrum" hidden></canvas>
                     </div>

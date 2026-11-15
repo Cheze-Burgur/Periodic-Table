@@ -100,10 +100,68 @@ class PeriodicTable {
         this.spectrumRequestId = 0;
         this.spectrumAbortController = null;
 
+        document.addEventListener("keydown", event => {
+            if (
+                event.key === "Escape" &&
+                this.detailsPanel.getAttribute("aria-hidden") === "false"
+            ) {
+                event.preventDefault();
+                this.clearSelection();
+            }
+        });
+
         this.tableElement.addEventListener("click", event => {
+            const closeButton = event.target.closest("#details-close");
+            if (closeButton && this.tableElement.contains(closeButton)) {
+                this.clearSelection();
+                return;
+            }
+
             const legendItem = event.target.closest(".legend-item");
             if (legendItem && this.tableElement.contains(legendItem)) {
                 this.filterByCategory(legendItem.dataset.category);
+            }
+        });
+
+        this.tableElement.addEventListener("pointerover", event => {
+            const card = event.target.closest(".element");
+            if (!card || card.contains(event.relatedTarget)) {
+                return;
+            }
+
+            const element = this.elements.find(
+                item => Number(item.number) === Number(card.dataset.atomicNumber)
+            );
+            if (element) {
+                this.showElementPreview(element);
+            }
+        });
+
+        this.tableElement.addEventListener("pointerout", event => {
+            const card = event.target.closest(".element");
+            if (card && !card.contains(event.relatedTarget)) {
+                this.hideElementPreview();
+            }
+        });
+
+        this.tableElement.addEventListener("focusin", event => {
+            const card = event.target.closest(".element");
+            if (!card) {
+                return;
+            }
+
+            const element = this.elements.find(
+                item => Number(item.number) === Number(card.dataset.atomicNumber)
+            );
+            if (element) {
+                this.showElementPreview(element);
+            }
+        });
+
+        this.tableElement.addEventListener("focusout", event => {
+            const card = event.target.closest(".element");
+            if (card && !card.contains(event.relatedTarget)) {
+                this.hideElementPreview();
             }
         });
 
@@ -113,41 +171,53 @@ class PeriodicTable {
 
     /* ===== Main table generation ===== */
     cacheElements() {
-        this.legend = this.tableElement.querySelector(".legend");
-        this.mainGrid = this.tableElement.querySelector(".main-grid");
-        this.seriesSection = this.tableElement.querySelector(".series-section");
-        this.detailsEmpty = this.tableElement.querySelector(".details-empty");
-        this.detailsContent = this.tableElement.querySelector(".details-content");
-        this.electronDiagram = this.tableElement.querySelector(".electron-diagram-svg");
-        this.detailsSymbol = this.tableElement.querySelector(".details-symbol");
-        this.detailsSymbolNumber = this.tableElement.querySelector(".details-symbol-number");
-        this.detailsSymbolText = this.tableElement.querySelector(".details-symbol-text");
-        this.detailsRadioactiveIcon = this.tableElement.querySelector(".details-symbol .element-radioactive-icon");
-        this.detailsName = this.tableElement.querySelector(".details-name");
-        this.detailsSummary = this.tableElement.querySelector(".details-summary");
-        this.detailsSummarySource = this.tableElement.querySelector(".details-summary-source");
-        this.detailsSummarySourceLabel = this.tableElement.querySelector(".details-summary-source-label");
-        this.detailsMass = this.tableElement.querySelector(".details-mass");
-        this.radioactiveNote = this.tableElement.querySelector(".radioactive-note");
-        this.detailsDensity = this.tableElement.querySelector(".details-density");
-        this.detailsElectronegativity = this.tableElement.querySelector(".details-electronegativity");
-        this.detailsAffinity = this.tableElement.querySelector(".details-affinity");
-        this.detailsIonization = this.tableElement.querySelector(".details-ionization");
-        this.detailsCategory = this.tableElement.querySelector(".details-category");
-        this.detailsPeriodLabel = this.tableElement.querySelector(".details-period-label");
-        this.detailsPeriod = this.tableElement.querySelector(".details-period");
-        this.detailsGroupLabel = this.tableElement.querySelector(".details-group-label");
-        this.detailsGroup = this.tableElement.querySelector(".details-group");
-        this.detailsConfiguration = this.tableElement.querySelector(".details-configuration");
-        this.detailsPhase = this.tableElement.querySelector(".details-phase");
-        this.detailsBoiling = this.tableElement.querySelector(".details-boiling");
-        this.detailsFreezing = this.tableElement.querySelector(".details-freezing");
-        this.detailsSublimation = this.tableElement.querySelector(".details-sublimation");
-        this.sublimationCard = this.tableElement.querySelector(".sublimation-card");
-        this.boilingCard = this.tableElement.querySelector(".boiling-card");
-        this.freezingCard = this.tableElement.querySelector(".freezing-card");
-        this.spectrumCanvas = this.tableElement.querySelector("#spectrum-canvas");
-        this.spectrumStatus = this.tableElement.querySelector(".spectrum-status");
+        this.legend = document.getElementById("legend");
+        this.mainGrid = document.getElementById("main-grid");
+        this.seriesSection = document.getElementById("series-section");
+        this.elementPreview = document.getElementById("element-preview");
+        this.previewContent = document.getElementById("preview-content");
+        this.previewSymbol = document.getElementById("preview-symbol");
+        this.previewSymbolNumber = document.getElementById("preview-symbol-number");
+        this.previewSymbolText = document.getElementById("preview-symbol-text");
+        this.previewRadioactiveIcon = document.getElementById("preview-radioactive-icon");
+        this.previewName = document.getElementById("preview-name");
+        this.previewCategory = document.getElementById("preview-category");
+        this.previewMass = document.getElementById("preview-mass");
+        this.previewDensity = document.getElementById("preview-density");
+        this.detailsPanel = document.getElementById("details-panel");
+        this.detailsClose = document.getElementById("details-close");
+        this.detailsEmpty = document.getElementById("details-empty");
+        this.detailsContent = document.getElementById("details-content");
+        this.electronDiagram = document.getElementById("electron-diagram");
+        this.detailsSymbol = document.getElementById("details-symbol");
+        this.detailsSymbolNumber = document.getElementById("details-symbol-number");
+        this.detailsSymbolText = document.getElementById("details-symbol-text");
+        this.detailsRadioactiveIcon = document.getElementById("details-radioactive-icon");
+        this.detailsName = document.getElementById("details-name");
+        this.detailsSummary = document.getElementById("details-summary");
+        this.detailsSummarySource = document.getElementById("details-summary-source");
+        this.detailsSummarySourceLabel = document.getElementById("details-summary-source-label");
+        this.detailsMass = document.getElementById("details-mass");
+        this.radioactiveNote = document.getElementById("radioactive-note");
+        this.detailsDensity = document.getElementById("details-density");
+        this.detailsElectronegativity = document.getElementById("details-electronegativity");
+        this.detailsAffinity = document.getElementById("details-affinity");
+        this.detailsIonization = document.getElementById("details-ionization");
+        this.detailsCategory = document.getElementById("details-category");
+        this.detailsPeriodLabel = document.getElementById("details-period-label");
+        this.detailsPeriod = document.getElementById("details-period");
+        this.detailsGroupLabel = document.getElementById("details-group-label");
+        this.detailsGroup = document.getElementById("details-group");
+        this.detailsConfiguration = document.getElementById("details-configuration");
+        this.detailsPhase = document.getElementById("details-phase");
+        this.detailsBoiling = document.getElementById("details-boiling");
+        this.detailsFreezing = document.getElementById("details-freezing");
+        this.detailsSublimation = document.getElementById("details-sublimation");
+        this.sublimationCard = document.getElementById("sublimation-card");
+        this.boilingCard = document.getElementById("boiling-card");
+        this.freezingCard = document.getElementById("freezing-card");
+        this.spectrumCanvas = document.getElementById("spectrum-canvas");
+        this.spectrumStatus = document.getElementById("spectrum-status");
     }
 
     refresh() {
@@ -155,6 +225,9 @@ class PeriodicTable {
 
         this.detailsEmpty.hidden = false;
         this.detailsContent.hidden = true;
+        this.detailsPanel.setAttribute("aria-hidden", "true");
+        this.detailsPanel.setAttribute("inert", "");
+        this.hideElementPreview();
 
         this.renderElements();
         this.updateCategoryFilter();
@@ -404,7 +477,7 @@ class PeriodicTable {
         }
 
         // Add series elements to their hardcoded rows.
-        const lanthanideRow = this.seriesSection.querySelector('[data-series="lanthanide"]');
+        const lanthanideRow = document.getElementById("lanthanide-elements");
 
         for (const element of lanthanides) {
             lanthanideRow.append(
@@ -415,7 +488,7 @@ class PeriodicTable {
             );
         }
 
-        const actinideRow = this.seriesSection.querySelector('[data-series="actinide"]');
+        const actinideRow = document.getElementById("actinide-elements");
 
         for (const element of actinides) {
             actinideRow.append(
@@ -433,6 +506,7 @@ class PeriodicTable {
                 "empty-state",
                 "No elements are available."
             );
+            empty.id = "empty-state";
 
             this.mainGrid.append(empty);
         }
@@ -483,29 +557,112 @@ class PeriodicTable {
         return `${temperature.toFixed(2)}℃ (${fahrenheit.toFixed(2)}℉)`;
     }
 
+    showElementPreview(element) {
+        if (this.detailsPanel.getAttribute("aria-hidden") === "false") {
+            return;
+        }
+
+        this.setElementSymbolCategory(this.previewSymbol, element.category);
+        this.previewSymbolNumber.textContent = element.number;
+        this.previewSymbolText.textContent = element.symbol;
+        this.previewRadioactiveIcon.replaceChildren();
+        this.previewRadioactiveIcon.removeAttribute("aria-label");
+        if (element.radioactive) {
+            this.previewRadioactiveIcon.innerHTML = RADIOACTIVE_ICON;
+            this.previewRadioactiveIcon.setAttribute("aria-label", "Radioactive");
+        }
+
+        this.previewName.textContent = element.name;
+        this.previewCategory.textContent =
+            this.categories[element.category]?.name || "Unknown";
+
+        const mass = Number(element.mass);
+        if (element.mass === null || element.mass === undefined || element.mass === "") {
+            this.previewMass.textContent = "Not provided";
+        } else if (this.isUnknown(element.mass) || !Number.isFinite(mass)) {
+            this.previewMass.textContent = "Unknown";
+        } else {
+            this.previewMass.textContent = `${Number.isInteger(mass) ? mass : mass.toFixed(3)} u`;
+        }
+
+        const density = Number(element.density);
+        if (element.density === null || element.density === undefined || element.density === "") {
+            this.previewDensity.textContent = "Not provided";
+        } else if (this.isUnknown(element.density) || !Number.isFinite(density)) {
+            this.previewDensity.textContent = "Unknown";
+        } else {
+            this.previewDensity.textContent = `${density} g/cm³`;
+        }
+        this.elementPreview.dataset.active = "true";
+        this.previewContent.setAttribute("aria-hidden", "false");
+    }
+
+    setElementSymbolCategory(symbol, category) {
+        const categoryName = category || "unknown";
+        const prefix = this.getCategoryPrefix(categoryName);
+
+        symbol.dataset.category = categoryName;
+        symbol.style.setProperty("--card-bg", `var(--${prefix}-bg)`);
+        symbol.style.setProperty("--card-border", `var(--${prefix}-border)`);
+        symbol.style.setProperty("--card-text", `var(--${prefix}-text-1)`);
+        symbol.style.setProperty("--card-text-2", `var(--${prefix}-text-2)`);
+    }
+
+    hideElementPreview() {
+        if (!this.elementPreview.hasAttribute("data-active")) {
+            return;
+        }
+
+        this.elementPreview.removeAttribute("data-active");
+        this.previewContent.setAttribute("aria-hidden", "true");
+    }
+
+    clearSelection() {
+        const selectedCard = this.mainGrid.querySelector(".element.selected") ||
+            this.seriesSection.querySelector(".element.selected");
+        const selectedElement = this.selectedElement;
+
+        this.selectedElement = null;
+        this.spectrumRequestId++;
+        this.spectrumAbortController?.abort();
+        this.spectrumAbortController = null;
+
+        this.mainGrid
+            .querySelectorAll(".element.selected")
+            .forEach(card => card.classList.remove("selected"));
+
+        this.seriesSection
+            .querySelectorAll(".element.selected")
+            .forEach(card => card.classList.remove("selected"));
+
+        this.detailsEmpty.hidden = false;
+        this.detailsContent.hidden = true;
+        this.detailsPanel.setAttribute("aria-hidden", "true");
+        this.detailsPanel.setAttribute("inert", "");
+        selectedCard?.focus();
+
+        if (
+            !this.elementPreview.hasAttribute("data-active") &&
+            selectedElement &&
+            selectedCard?.matches(":hover, :focus")
+        ) {
+            this.showElementPreview(selectedElement);
+        }
+    }
+
     selectElement(element) {
+        this.hideElementPreview();
+
         if (
             this.selectedElement &&
             Number(this.selectedElement.number) === Number(element.number)
         ) {
-            this.selectedElement = null;
-            this.spectrumRequestId++;
-            this.spectrumAbortController?.abort();
-            this.spectrumAbortController = null;
-
-            this.mainGrid
-                .querySelectorAll(".element.selected")
-                .forEach(card => card.classList.remove("selected"));
-
-            this.seriesSection
-                .querySelectorAll(".element.selected")
-                .forEach(card => card.classList.remove("selected"));
-
-            this.detailsEmpty.hidden = false;
-            this.detailsContent.hidden = true;
+            this.clearSelection();
             return;
         }
 
+        const panelWasOpen = this.detailsPanel.getAttribute("aria-hidden") === "false";
+        this.detailsPanel.scrollTop = 0;
         this.selectedElement = element;
 
         // Remove previous selection
@@ -533,29 +690,10 @@ class PeriodicTable {
         // Update details panel
         this.detailsEmpty.hidden = true;
         this.detailsContent.hidden = false;
+        this.detailsPanel.removeAttribute("inert");
+        this.detailsPanel.setAttribute("aria-hidden", "false");
 
-        this.detailsSymbol.dataset.category =
-            element.category || "unknown";
-
-        this.detailsSymbol.style.setProperty(
-            "--card-bg",
-            `var(--${this.getCategoryPrefix(element.category)}-bg)`
-        );
-
-        this.detailsSymbol.style.setProperty(
-            "--card-border",
-            `var(--${this.getCategoryPrefix(element.category)}-border)`
-        );
-
-        this.detailsSymbol.style.setProperty(
-            "--card-text",
-            `var(--${this.getCategoryPrefix(element.category)}-text-1)`
-        );
-
-        this.detailsSymbol.style.setProperty(
-            "--card-text-2",
-            `var(--${this.getCategoryPrefix(element.category)}-text-2)`
-        );
+        this.setElementSymbolCategory(this.detailsSymbol, element.category);
 
         this.detailsSymbolNumber.textContent = element.number;
         this.detailsSymbolText.textContent = element.symbol;
@@ -720,6 +858,10 @@ class PeriodicTable {
         this.detailsBoiling.textContent = this.formatTemperature(element.boiling);
         this.detailsFreezing.textContent = this.formatTemperature(freezingPoint);
         this.updateSpectrum(element);
+
+        if (!panelWasOpen) {
+            this.detailsClose.focus();
+        }
     }
 
     async updateSpectrum(element) {
@@ -1082,13 +1224,13 @@ class PeriodicTable {
 document.addEventListener("keydown", event => {
     if (event.ctrlKey && !event.altKey && !event.metaKey && event.key.toLowerCase() === "h") {
         event.preventDefault();
-        document.querySelector(".table-footer")?.classList.toggle("footer-hidden");
+        document.getElementById("table-footer")?.classList.toggle("footer-hidden");
     }
 });
 
 async function initialize() {
     const tableElement = document.getElementById("table-wrap");
-    const loadStatus = document.querySelector(".table-load-status");
+    const loadStatus = document.getElementById("table-load-status");
     let elements;
 
     try {
@@ -1096,7 +1238,7 @@ async function initialize() {
     } catch (error) {
         console.error("Failed to load element data:", error);
         new PeriodicTable(tableElement, []);
-        tableElement.querySelector(".empty-state")?.remove();
+        document.getElementById("empty-state")?.remove();
         loadStatus.textContent =
             "Unable to load element data. Check your connection and reload the page.";
         loadStatus.hidden = false;
