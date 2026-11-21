@@ -11,6 +11,17 @@
             "boil": null,
             "melt": null,
             "sublimate": 887
+        },
+        {
+            "name": "Tennessine",
+            "boil": null,
+            "melt": null,
+            "phase": "Unknown"
+        },
+        {
+            "name": "Oganesson",
+            "boil": null,
+            "phase": "Unknown"
         }
     ]
 }

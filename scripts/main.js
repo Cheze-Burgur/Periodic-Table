@@ -9,6 +9,7 @@ import {
 } from "./processSpectra.js";
 
 const RADIOACTIVE_MESSAGE = "This element has no stable isotopes; the mass of the isotope with the longest half-life is used";
+const UNSPECIFIED_VALUE_LABEL = "Unknown";
 
 const RADIOACTIVE_ICON = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
@@ -330,15 +331,15 @@ class PeriodicTable {
             }
         });
 
-        let massValue = "";
-        if (element.mass !== null && element.mass !== undefined && element.mass !== "") {
-            const numericMass = Number(element.mass);
-            massValue = Number.isFinite(numericMass)
+        const numericMass = Number(element.mass);
+        const unspecifiedMass = this.formatUnspecifiedValue(element.mass);
+        const massValue = unspecifiedMass !== null
+            ? UNSPECIFIED_VALUE_LABEL
+            : Number.isFinite(numericMass)
                 ? Number.isInteger(numericMass)
                     ? `(${numericMass})`
                     : numericMass.toFixed(3)
-                : String(element.mass);
-        }
+                : UNSPECIFIED_VALUE_LABEL;
         const mass = this.createElement(
             "span",
             "element-mass",
@@ -539,18 +540,28 @@ class PeriodicTable {
         return typeof value === "string" && value.trim().toLowerCase() === "unknown";
     }
 
-    formatTemperature(value) {
-        if (value === null || value === undefined || value === "") {
-            return "Not provided";
+    formatUnspecifiedValue(value) {
+        if (
+            value === null ||
+            value === undefined ||
+            (typeof value === "string" &&
+                (value.trim() === "" || this.isUnknown(value)))
+        ) {
+            return UNSPECIFIED_VALUE_LABEL;
         }
 
-        if (this.isUnknown(value)) {
-            return "Unknown";
+        return null;
+    }
+
+    formatTemperature(value) {
+        const unspecifiedValue = this.formatUnspecifiedValue(value);
+        if (unspecifiedValue !== null) {
+            return unspecifiedValue;
         }
 
         const temperature = Number(value);
         if (!Number.isFinite(temperature)) {
-            return "Unknown";
+            return UNSPECIFIED_VALUE_LABEL;
         }
 
         const fahrenheit = temperature * 9 / 5 + 32;
@@ -577,19 +588,21 @@ class PeriodicTable {
             this.categories[element.category]?.name || "Unknown";
 
         const mass = Number(element.mass);
-        if (element.mass === null || element.mass === undefined || element.mass === "") {
-            this.previewMass.textContent = "Not provided";
-        } else if (this.isUnknown(element.mass) || !Number.isFinite(mass)) {
-            this.previewMass.textContent = "Unknown";
+        const unspecifiedMass = this.formatUnspecifiedValue(element.mass);
+        if (unspecifiedMass !== null) {
+            this.previewMass.textContent = unspecifiedMass;
+        } else if (!Number.isFinite(mass)) {
+            this.previewMass.textContent = UNSPECIFIED_VALUE_LABEL;
         } else {
             this.previewMass.textContent = `${Number.isInteger(mass) ? mass : mass.toFixed(3)} u`;
         }
 
         const density = Number(element.density);
-        if (element.density === null || element.density === undefined || element.density === "") {
-            this.previewDensity.textContent = "Not provided";
-        } else if (this.isUnknown(element.density) || !Number.isFinite(density)) {
-            this.previewDensity.textContent = "Unknown";
+        const unspecifiedDensity = this.formatUnspecifiedValue(element.density);
+        if (unspecifiedDensity !== null) {
+            this.previewDensity.textContent = unspecifiedDensity;
+        } else if (!Number.isFinite(density)) {
+            this.previewDensity.textContent = UNSPECIFIED_VALUE_LABEL;
         } else {
             this.previewDensity.textContent = `${density} g/cm³`;
         }
@@ -705,7 +718,8 @@ class PeriodicTable {
         }
 
         this.detailsName.textContent = element.name;
-        this.detailsSummary.textContent = element.summary || "Not provided";
+        this.detailsSummary.textContent =
+            this.formatUnspecifiedValue(element.summary) || element.summary;
 
         const summarySource = element.source;
         const hasValidSummarySource =
@@ -722,27 +736,26 @@ class PeriodicTable {
 
         // Atomic mass
         const mass = Number(element.mass);
-
-        if (element.mass === null || element.mass === undefined || element.mass === "") {
-            this.detailsMass.textContent = "Not provided";
-        } else if (this.isUnknown(element.mass)) {
-            this.detailsMass.textContent = "Unknown";
+        const unspecifiedMass = this.formatUnspecifiedValue(element.mass);
+        if (unspecifiedMass !== null) {
+            this.detailsMass.textContent = unspecifiedMass;
         } else if (Number.isFinite(mass)) {
             this.detailsMass.textContent = Number.isInteger(mass)
                 ? `${mass} u`
                 : `${mass.toFixed(3)} u`;
         } else {
-            this.detailsMass.textContent = "Unknown";
+            this.detailsMass.textContent = UNSPECIFIED_VALUE_LABEL;
         }
 
         this.radioactiveNote.textContent = RADIOACTIVE_MESSAGE;
         this.radioactiveNote.hidden = !element.radioactive;
 
         const density = Number(element.density);
-        if (element.density === null || element.density === undefined || element.density === "") {
-            this.detailsDensity.textContent = "Not provided";
-        } else if (this.isUnknown(element.density) || !Number.isFinite(density)) {
-            this.detailsDensity.textContent = "Unknown";
+        const unspecifiedDensity = this.formatUnspecifiedValue(element.density);
+        if (unspecifiedDensity !== null) {
+            this.detailsDensity.textContent = unspecifiedDensity;
+        } else if (!Number.isFinite(density)) {
+            this.detailsDensity.textContent = UNSPECIFIED_VALUE_LABEL;
         } else {
             const densityText = density.toLocaleString(undefined, {
                 useGrouping: false,
@@ -752,27 +765,23 @@ class PeriodicTable {
         }
 
         const electronegativity = Number(element.electronegativity);
-        if (
-            element.electronegativity === null ||
-            element.electronegativity === undefined ||
-            element.electronegativity === ""
-        ) {
-            this.detailsElectronegativity.textContent = "Not provided";
-        } else if (this.isUnknown(element.electronegativity) || !Number.isFinite(electronegativity)) {
-            this.detailsElectronegativity.textContent = "Unknown";
+        const unspecifiedElectronegativity =
+            this.formatUnspecifiedValue(element.electronegativity);
+        if (unspecifiedElectronegativity !== null) {
+            this.detailsElectronegativity.textContent = unspecifiedElectronegativity;
+        } else if (!Number.isFinite(electronegativity)) {
+            this.detailsElectronegativity.textContent = UNSPECIFIED_VALUE_LABEL;
         } else {
             this.detailsElectronegativity.textContent = String(electronegativity);
         }
 
         const electronAffinity = Number(element.electronAffinity);
-        if (
-            element.electronAffinity === null ||
-            element.electronAffinity === undefined ||
-            element.electronAffinity === ""
-        ) {
-            this.detailsAffinity.textContent = "Not provided";
-        } else if (this.isUnknown(element.electronAffinity) || !Number.isFinite(electronAffinity)) {
-            this.detailsAffinity.textContent = "Unknown";
+        const unspecifiedAffinity =
+            this.formatUnspecifiedValue(element.electronAffinity);
+        if (unspecifiedAffinity !== null) {
+            this.detailsAffinity.textContent = unspecifiedAffinity;
+        } else if (!Number.isFinite(electronAffinity)) {
+            this.detailsAffinity.textContent = UNSPECIFIED_VALUE_LABEL;
         } else {
             this.detailsAffinity.textContent = `${electronAffinity.toLocaleString(undefined, {
                 maximumSignificantDigits: 6
@@ -789,7 +798,7 @@ class PeriodicTable {
 
         if (ionizationEnergies.length === 0) {
             const row = this.createElement("tr");
-            const cell = this.createElement("td", "ionization-empty", "Not provided");
+            const cell = this.createElement("td", "ionization-empty", UNSPECIFIED_VALUE_LABEL);
             cell.colSpan = 2;
             row.append(cell);
             this.detailsIonization.append(row);
@@ -823,10 +832,9 @@ class PeriodicTable {
             this.detailsPeriodLabel.textContent = "Period";
             this.detailsGroupLabel.textContent = "Group";
             this.detailsPeriod.textContent =
-                element.period ?? "Not provided";
-
+                this.formatUnspecifiedValue(element.period) ?? element.period;
             this.detailsGroup.textContent =
-                element.group ?? "Not provided";
+                this.formatUnspecifiedValue(element.group) ?? element.group;
         }
 
         // Electron configuration
@@ -835,9 +843,7 @@ class PeriodicTable {
         );
 
         this.detailsPhase.textContent =
-            element.phase !== null && element.phase !== undefined && element.phase !== ""
-                ? element.phase
-                : "Not provided";
+            this.formatUnspecifiedValue(element.phase) ?? element.phase;
 
         const freezingPoint = element.freezing ?? element.melting;
         const hasSublimationPoint = element.sublimation !== null &&
